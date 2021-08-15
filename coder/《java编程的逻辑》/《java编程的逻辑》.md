@@ -600,7 +600,284 @@ char的算数运算作用有两方面
 
 > 程序是用来解决现实问题的，将现实中的概念映射为程序中的概念，是初学编程过程中的一步跨越。本节通过一些例子来演示如何将一些现实概念和问题通过类以及类的组合来表示和处理，涉及的概念包括图形处理、电商、人之间的血缘关系以及计算机中的文件和目录。
 
-<font color ='red'>在我现阶段的编程中我是否思考过上述观点，我是否可以通过类中的成员变量、类与类之间的关系反推到现实中的业务关系。</font>在javaAPI中需要关注的可能就是成员方法。
+<font color ='red'>在我现阶段的编程中我是否思考过上述观点，我是否可以通过类中的成员变量、类与类之间的关系反推到现实中的业务关系。</font>在javaAPI的类中需要关注的可能就是成员方法，他们并不存在业务属性。
+
+### 类路径
+
+<img src="assets/image-20210815164624454.png" alt="image-20210815164624454" style="zoom:50%;" />
 
 
+
+### 程序的编译与连接（运行）
+
+> 从Java源代码到运行的程序，有编译和链接两个步骤。编译是将源代码文件变成扩展名是．class的一种字节码，这个工作一般是由javac命令完成的。链接是在运行时动态执行的，.class文件不能直接运行，运行的是Java虚拟机，虚拟机听起来比较抽象，执行的就是Java命令，这个命令解析．class文件，转换为机器能识别的二进制代码，然后运行。所谓链接就是根据引用到的类加载相应的字节码并执行。
+
+### 模块化的概念
+
+> 在Java 9中，清晰地引入了模块的概念，JDK和JRE都按模块化进行了重构，传统的组织机制依然是支持的，但新的应用可以使用模块。一个应用可由多个模块组成，一个模块可由多个包组成。模块之间可以有一定的依赖关系，一个模块可以导出包给其他模块用，可以提供服务给其他模块用，也可以使用其他模块提供的包，调用其他模块提供的服务。对于复杂的应用，模块化有很多好处，比如更强的封装、更为可靠的配置、更为松散的耦合、更动态灵活等。模块是一个很大的主题，限于篇幅，我们就不详细介绍了。
+
+## 类的继承
+
+子类对象不能直接访问父类的私有属性和方法，当然父类对象在类外边也无法访问其私有属性和方法。
+
+重写只针对成员方法，且在调用时存在动态绑定 -> 运行多态；
+
+父类的方法必须是非private才可以被子类重写；
+
+父类引用指向子类对象，调用重写方法是子类中重写的；
+
+> 【注】：继承有什么缺点？
+
+
+
+在父类构造函数中调用重载方法，最终输出与结果与预期不符分析，代码如下：
+
+```java
+class Base{
+    public Base(){
+        test();
+    }
+
+    public void test(){
+        System.out.println("base");
+    }
+}
+
+class Child extends Base{
+    public int a = 1;
+    @Override
+    public void test(){
+        System.out.println("Child");
+        System.out.println(a);
+        System.out.println("----------");
+
+    }
+
+    public static void main(String[] args) {
+        Child child = new Child();
+        /*
+        在创建子类对象时 调用父类的无参构造方法，
+        由于父类的无参构造方法回调用test()方法而test()又被子类重写，
+        故此处会调用子类的test()方法，但由于在调用父类构造方法时子类的成员变量赋值语句还没执行，故打印结果是0；
+        
+        但在实际写代码时不应该在父类的构造函数中调用public的方法，这样很容易造成歧义，降低代码的可读性。
+        Child
+        0
+        Child
+        1
+         */
+        child.test();
+    }
+}
+```
+
+### 重名与静态绑定
+
+> 静态绑定:静态绑定在程序编译阶段即可决定。通过类型就可判断调用的是子类还是父类的成员变量，静态变量，静态方法；
+>
+> 动态绑定：态绑定则要等到程序运行时。
+
+当子类和父类中同时存在同名的成员变量，静态变量，静态方法时，最终访问这些内容的变量类型是什么（父类、子类）最终就会调用对应类型的成员变量，静态变量，静态方法；
+
+### 重载和重写
+
+> 重载是指方法名称相同但参数签名不同（参数个数、类型或顺序不同）
+>
+> 重写是指子类重写与父类相同参数签名的方法
+>
+> 当有多个重名函数的时候，在决定要调用哪个函数的过程中，首先是按照参数类型进行匹配的，换句话说，寻找在所有重载版本中最匹配的，然后才看变量的动态类型，进行动态绑定。
+
+重载中类型匹配遵从自动向上转型原则，即"大"可以兼容"小"
+
+* 基本类型：表示范围大的兼容小的
+* 引用类型：父类兼容子类
+
+### 继承访问权限protected
+
+```java
+class Base{
+
+    protected int currentStep;
+    protected void step1(){}
+    protected void step2(){}
+
+    public void action(){
+        this.currentStep = 1;
+        step1();
+        this.currentStep = 2;
+        step2();
+
+    }
+
+}
+
+class Child extends Base{
+    @Override
+    protected void step1(){
+        System.out.println("child step " + this.currentStep);
+    }
+    
+    @Override
+    protected void step2(){
+        System.out.println("child step " + this.currentStep);
+
+    }
+
+    public static void main(String[] args) {
+        Child child = new Child();
+        child.action();
+    }
+
+
+}
+```
+
+> 基类定义了表示对外行为的方法action，并定义了可以被子类重写的两个步骤step1()和step2()，以及被子类查看的变量currentStep，子类通过重写protected方法step1()和step2()来修改对外的行为。
+>
+> 这种思路和设计是一种设计模式，称之为模板方法。action方法就是一个模板方法，它定义了实现的模板，而具体实现则由子类提供。模板方法在很多框架中有广泛的应用，这是使用protected的一种常见场景。
+
+### 重写-可见性
+
+即访问权限及抛出异常的范围子类也要比父类大；
+
+> 重写方法时，一般并不会修改方法的可见性。但我们还是要说明一点，重写时，子类方法不能降低父类方法的可见性。不能降低是指，父类如果是public，则子类也必须是public，父类如果是protected，子类可以是protected，也可以是public，即子类可以升级父类方法的可见性但不能降低;
+>
+> 为什么要这样规定呢？继承反映的是“is-a”的关系，即子类对象也属于父类，子类必须支持父类所有对外的行为，将可见性降低就会减少子类对外的行为，从而破坏“is-a”的关系，但子类可以增加父类的行为，所以提升可见性是没有问题的。
+
+### 防止继承-final
+
+> 继承是把双刃剑，带来的影响就是，有的时候我们不希望父类方法被子类重写，有的时候甚至不希望类被继承，可以通过final关键字实现
+
+### 继承实现的基本原理
+
+静态代码块，实例代码块，构造方法，父类静态代码块，父类实例代码块，父类构造方法调用顺序
+
+```java
+class Base {
+
+    public static int s;
+    private int a;
+
+    static {
+        System.out.println("基类静态代码块，s: " + s);
+        s = 1;
+    }
+
+    {
+        System.out.println("基类实例代码块，a: " + a);
+        a = 1;
+    }
+
+    public Base(){
+        System.out.println("基类构造方法，a: " + a);
+        a = 2;
+    }
+
+    public void step(){
+        System.out.println("base s: " + s + " a :" + a );
+    }
+
+    public void action(){
+        System.out.println("action method start");
+        step();
+        System.out.println("action method end");
+    }
+
+}
+
+class Child extends Base {
+    public static int s;
+    private int a;
+
+    static {
+        System.out.println("子类静态代码块，s: " + s);
+        s = 10;
+    }
+
+    {
+        System.out.println("子类实例代码块，a: " + a);
+        a = 10;
+    }
+
+    public Child(){
+        System.out.println("子类构造方法，a: " + a);
+        a = 20;
+    }
+
+    public void step(){
+        System.out.println("Child s: " + s + " a :" + a );
+    }
+
+    public static void main(String[] args) {
+        System.out.println("-- new child()");
+        Child child = new Child();
+        System.out.println("\n --- child.action()");
+        child.action();
+        Base b = child;
+        System.out.println("---b.action()");
+        b.action();
+        System.out.println("b.s: " + b.s);
+        System.out.println("child.s: " + child.s);
+
+        /*
+        将类加载到内存中
+        基类静态代码块，s: 0
+        子类静态代码块，s: 0
+        -- new child()
+        基类实例代码块，a: 0
+        基类构造方法，a: 1
+        子类实例代码块，a: 0
+        子类构造方法，a: 10
+        --- child.action()
+        action method start
+        Child s: 10 a : 20
+        action method end
+        --- b.action()
+        action method start
+        Child s: 10 a : 20
+        action method end
+        b.s : 1
+        child.s : 10
+
+         */
+
+    }
+
+
+}
+```
+
+#### 类加载过程
+
+> 在Java中，所谓类的加载是指将类的相关信息加载到内存。在Java中，类是动态加载的，当第一次使用这个类的时候才会加载，加载一个类时，会查看其父类是否已加载，如果没有，则会加载其父类。
+>
+> 1）一个类的信息主要包括以下部分：
+>
+> * 类变量（静态变量）；
+> * 类初始化代码；
+>     * 定义静态变量时的赋值语句；
+>     * 静态初始化代码块。
+> * 类方法（静态方法）；
+> * 实例变量；
+> * 实例初始化代码；
+>     * 定义实例变量时的赋值语句；
+>     * 实例初始化代码块；
+>     * 构造方法。
+> * 实例方法；
+> * 父类信息引用。
+>
+> 2）类加载过程包括：
+>
+> * 分配内存保存类的信息；
+> * 给类变量赋默认值；
+> * 加载父类；
+> * 设置父子关系；
+> * 执行类初始化代码。
+>
+> 注意，类初始化代码，是先执行父类的，再执行子类的。不过，父类执行时，子类静态变量的值也是有的，是默认值。对于默认值，我们之前说过，数字型变量都是0, boolean是false, char是'\u0000'，引用型变量是null。
+
+对上述引用中
+
+1. char是'\u0000'是一个类似空格的字符；它的unicode编码是'\u0000'
+2. <font color ='red'>什么时候给类变量和成员变量赋初值的呢？</font>
 
