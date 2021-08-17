@@ -616,7 +616,7 @@ char的算数运算作用有两方面
 
 > 在Java 9中，清晰地引入了模块的概念，JDK和JRE都按模块化进行了重构，传统的组织机制依然是支持的，但新的应用可以使用模块。一个应用可由多个模块组成，一个模块可由多个包组成。模块之间可以有一定的依赖关系，一个模块可以导出包给其他模块用，可以提供服务给其他模块用，也可以使用其他模块提供的包，调用其他模块提供的服务。对于复杂的应用，模块化有很多好处，比如更强的封装、更为可靠的配置、更为松散的耦合、更动态灵活等。模块是一个很大的主题，限于篇幅，我们就不详细介绍了。
 
-## 类的继承
+## 4. 类的继承
 
 ### 基础
 
@@ -1051,3 +1051,115 @@ class Child extends Base {
 }
 ```
 
+## 5. 类的扩展
+
+> 本章内容：
+>
+> 接口
+>
+> 抽象类
+>
+> 内部类
+>
+> 枚举
+
+### 接口的本质
+
+> 有些场景中，我们不关心对象的类型，仅仅注重对象的能力，即这个对象的方法；
+>
+> 比如要拍照，很多时候，只要能拍出符合需求的照片就行，至于是用手机拍，还是用Pad拍，或者是用单反相机拍，并不重要，即关心的是对象是否有拍出照片的能力，而并不关心对象到底是什么类型，手机、Pad或单反相机都可以。
+>
+> 又如要计算一组数字，只要能计算出正确结果即可，至于是由人心算，用算盘算，用计算器算，用计算机软件算，并不重要，即关心的是对象是否有计算的能力，而并不关心对象到底是算盘还是计算器。
+>
+> 再如要将冷水加热，只要能得到热水即可，至于是用电磁炉加热，用燃气灶加热，还是用电热水壶加热，并不重要，即重要的是对象是否有加热水的能力，而并不关心对象到底是什么类型。
+>
+> 在以上场景中类型不重要，重要的是实现功能，即提供方法；
+
+接口是这样的"类"，不注重类型，重点关注"能力","方法"
+
+#### 接口的介绍
+
+> 接口声明了一组能力，但它自己并没有实现这个能力，它只是一个约定。接口涉及交互两方对象，一方需要实现这个接口，另一方使用这个接口，但双方对象并不直接互相依赖，它们只是通过接口间接交互。
+
+当一个类实现了某个接口，那它便拥有了接口指定的"能力"，当类实现多个接口，那它便拥有了多个"能力"
+
+#### 接口的声明
+
+```java
+public interface MyComparable {
+    public abstract int compareTo(Object other);
+//    int compareTo();
+}
+
+
+
+class Point implements MyComparable{
+    private int x;
+    private int y;
+    public Point(int x,int y){
+        this.x = x;
+        this.y = y;
+    }
+    //点到原点之间的距离
+    public double distance(){
+        return Math.sqrt(x*x + y*y);
+    }
+
+    @Override
+    public int compareTo(Object other) {
+        //1. 判断other类型是否是Point及其子类
+        if(!(other instanceof Point)){
+            throw new IllegalArgumentException();
+        }
+        //2. 计算两个点到原点的距离，并比较大小
+        Point otherPoint = (Point)other;
+        /*double otherDistance = otherPoint.distance();
+        double curDistance = distance();
+        if(otherDistance > curDistance){
+            return -1;
+        }else if(otherDistance == curDistance){
+            return 0;
+        }*/
+        //改写上述注释代码定义一个两个点距离原点之差的变量disVar
+        double disVar = otherPoint.distance() - distance();
+        if(disVar > 0){
+            return -1;
+        }else if(disVar == 0){
+            return 0;
+        }
+        return 1;
+    }
+
+    public static void main(String[] args) {
+        Point point = new Point(3, 4);
+        Point otherPoint = new Point(4, 5);
+        int rst = point.compareTo(otherPoint);
+        System.out.println(rst);
+    }
+
+}
+```
+
+声明接口时，使用implement关键字，在定义接口中的方法不论加不加修饰符其效果都是等价于加了public abstract;
+
+接口中的变量：pubic static final a = 2;当声明为int a时，也相当于加上public static final
+
+接口可以多继承
+
+接口也可以使用instanceof来判断对象是否是接口类型；
+
+#### java8中接口的新特性
+
+> 在没有默认方法之前，Java是很难给接口增加功能的，比如List接口（第9章介绍），因为有太多非Java JDK控制的代码实现了该接口，如果给接口增加一个方法，则那些接口的实现就无法在新版Java上运行，必须改写代码，实现新的方法，这显然是无法接受的。函数式数据处理需要给一些接口增加一些新的方法，所以就有了默认方法的概念，接口增加了新方法，而接口现有的实现类也不需要必须实现
+>
+> 在Java 8中，静态方法和默认方法都必须是public的，Java 9去除了这个限制，它们都可以是private的，引入private方法主要是为了方便多个静态或默认方法复用代码
+
+1. 允许在接口中定义两类新方法：静态方法public static和默认方法 default，它们有实现体
+
+    比如，Java API中，Collection接口有一个对应的单独的类Collections，在Java 8中，就可以直接写在接口中了，比如Comparator接口就定义了多个静态方法。
+
+### 抽象类
+
+### 内部类的本质
+
+### 枚举类的本质
