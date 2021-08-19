@@ -1217,12 +1217,169 @@ class Point implements MyComparable{
 
 ### 内部类的本质
 
+> 一般而言，内部类与包含它的外部类有比较密切的关系，而与其他类关系不大，定义在类内部，可以实现对外部完全隐藏，可以有更好的封装性，代码实现上也往往更为简洁。
+>
+> 内部类只是Java编译器的概念，对于Java虚拟机而言，它是不知道内部类这回事的，<font color= 'red'>每个内部类最后都会被编译为一个独立的类，生成一个独立的字节码文件</font>
+
+内部类最终都会被编译成一个独立与外部类的类，生成一个独立的字节码文件。
+
+---
+
 #### 内部类的分类
 
+内部类分为4类
 
+1. 静态内部类
+
+2. 成员内部类
+3. 方法内部类（局部内部类）
+4. 匿名内部类
+
+> 方法内部类是在一个方法内定义和使用的；匿名内部类使用范围更小，<font color= 'red'>它们都不能在外部使用；</font>
+>
+> 成员内部类和静态内部类可以被外部使用，不过它们都可以被声明为private，这样，外部就不能使用了
+
+方法内部类和匿名内部类都不能供外部类使用；
+
+成员内部类和静态内部类可以供外部类使用，但是其声明为private时，外部类便不能访问内部类了<font color= 'red'>不对啊，经验证当静态内部类和成员内部类声明成private外部类也可以访问其内部；</font>；
+
+【注】：对上句中红字描述，作者可能是要说外部外访问内部类private的内部类无法访问，而不是外部类中访问内部类
+
+---
+
+##### 静态内部类
+
+```java
+/*
+内部类
+    * 静态内部类
+ */
+public class Test {
+    //定义外部类的私有静态变量
+    private static int outVar = 100;
+    //定义静态内部类
+    public static class InnerClass{
+        //静态类内部定义方法访问外部类类变量
+        public void accessOutVar(){
+            System.out.println(outVar);
+        }
+        public static void innerStaticMethod(){
+            System.out.println("innerStaticMethod");
+        }
+    }
+    //外部类定义方法创建内部类对象并调用内部类方法访问外部类类变量
+    public void test(){
+        //直接创建静态内部类对象
+        InnerClass ic = new InnerClass();
+        //调用静态内部类中的成员方法
+        ic.accessOutVar();
+        //通过类名调用静态内部类中的静态方法
+        InnerClass.innerStaticMethod();
+    }
+
+    //main函数测试
+    public static void main(String[] args) {
+        //在main方法中直接创建内部类的对象
+        InnerClass innerClass = new InnerClass();
+        //内部类对象调用其成员方法
+        innerClass.accessOutVar();
+        System.out.println("-------------------");
+        //外部类对象调用外部类方法，外部类方法中调用了内部类的方法
+        new Test().test();
+        //在外部类中通过类名.内部类静态方法名直接调用
+        Test.InnerClass.innerStaticMethod();
+    }
+
+}
+```
+
+静态内部类不能访问外部类的成员变量，成员方法，只能访问外部类的静态变量和静态方法；
+
+---
+
+静态内部实现
+
+静态内部类访问了外部类的私有静态变量，java的实现是为内部类在外部类中声明一个非私有的静态方法；
+
+<img src="assets/image-20210819232656960.png" alt="image-20210819232656960" style="zoom:50%;" />
+
+<img src="assets/image-20210819232710132.png" alt="image-20210819232710132" style="zoom:50%;" />
 
 ---
 
 
 
+静态内部类的使用场景
+
+* Integer类内部有一个私有静态内部类IntegerCache，用于支持整数的自动装箱。
+* 表示链表的LinkedList类内部有一个私有静态内部类Node，表示链表中的每个节点。
+* Character类内部有一个public静态内部类UnicodeBlock，用于表示一个Unicode block。
+
+---
+
+##### 成员内部类
+
+> 与静态内部类不同，除了静态变量和方法，成员内部类还可以直接访问外部类的实例变量和方法;
+>
+> 在外部类内，使用成员内部类与静态内部类是一样的，直接使用即可
+>
+> 与静态内部类不同，成员内部类对象总是与一个外部类对象相连的，在外部使用时，它不能直接通过new Outer.Inner()的方式创建对象，而是要先将创建一个Outer类对象
+>
+> 创建内部类对象的语法是“外部类对象．new 内部类()”，如outer.new Inner()。
+>
+> <font color = 'red'>与静态内部类不同，成员内部类中不可以定义静态变量和方法（final变量例外，它等同于常量），下面介绍的方法内部类和匿名内部类也都不可以。</font>
+
+---
+
+成员内部类实现
+
+<img src="assets/image-20210819233326539.png" alt="image-20210819233326539" style="zoom:33%;" />
+
+<img src="assets/image-20210819233334939.png" alt="image-20210819233334939" style="zoom:30%;" />
+
+---
+
+成员内部类使用场景
+
+> 在Java API的类LinkedList中，它的两个方法listIterator和descendingIterator的返回值都是接口Iterator，调用者可以通过Iterator接口对链表遍历，listIterator和descend-ingIterator内部分别使用了成员内部类ListItr和DescendingIterator，这两个内部类都实现了接口Iterator。
+
+---
+
+##### 方法内部类
+
+> 类Inner定义在外部类方法test中，方法内部类只能在定义的方法内被使用。如果方法是实例方法，则除了静态变量和方法，内部类还可以直接访问外部类的实例变量和方法，如innerMethod直接访问了外部私有实例变量a。
+>
+> <font color = 'red'>如果方法是静态方法，则方法内部类只能访问外部类的静态变量和方法。方法内部类还可以直接访问方法的参数和方法中的局部变量，不过，这些变量必须被声明为final</font>
+>
+> 【注】：jdk1.8后方法的参数不用声明成final类型，而方法的局部变量如果要被方法内部类使用则就需要声明为final；
+
+![image-20210819234622657](assets/image-20210819234622657.png)
+
+---
+
+具体为什么需要声明成final，貌似可以从编译后的源文件看出；
+
+【注】：final的数组地址不能变，但数组的内容可以变；对象也是同样，对象的地址不能变，但对象的成员变量可以改变
+
+##### 匿名内部类
+
+###### 语法
+
+```java
+new 父类/接口(参数列表){
+  //匿名实现部分
+}
+```
+
+---
+
+###### 匿名内部类实现回调
+
+>  Arrays.sort中传递的Comparator对象，它的compare方法并不是在写代码的时候被调用的，而是在Arrays. sort的内部某个地方回过头来调用的
+
+这是啥回调？？？
+
+---
+
 ### 枚举类的本质
+
