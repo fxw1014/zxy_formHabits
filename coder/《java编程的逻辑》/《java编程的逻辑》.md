@@ -1383,15 +1383,71 @@ new 父类/接口(参数列表){
 
 ### 4 枚举类的本质
 
+> 1. [发现自行实践实现不了网上对枚举类型的编译结果，还是寻不到太合适的解释，参考如下文章](https://segmentfault.com/a/1190000019196740,https://www.cnblogs.com/hollischuang/p/10836913.html)
+>     * [Java代码的编译与反编译那些事儿](https://www.cnblogs.com/hollischuang/p/10836913.html)
+>     * [javap命令与Java Dcompiler工具、IDEA自带的反编译器反编译的结果的差别及原因](https://segmentfault.com/a/1190000019196740)
+> 2. 
+
 #### 4.1 不带参的枚举
 
+```java
+public enum  EnumTest {
+    BIG,MID,SMALL
+}
+
+```
+
+
+
 #### 4.2 不带参枚举的本质
+
+
+
+```tex
+javap EnumTest.class
+```
+
+javap命令
+
+```java
+public final class test.EnumTest extends java.lang.Enum<test.EnumTest> {
+  public static final test.EnumTest BIG;
+  public static final test.EnumTest MID;
+  public static final test.EnumTest SMALL;
+  
+  public static test.EnumTest[] values();
+  
+  public static test.EnumTest valueOf(java.lang.String);
+  static {};
+  
+}
+```
+
+使用上面命令编译后的结果
+
+1. 枚举类型是final类型，故不可被继承
+2. 三个枚举值实际上是三个静态变量，也是final的，不能被修改；
+3. values(),vlaueOf()等都是编译器自己添加的
 
 #### 4.3 Enum抽象类的方法
 
 ##### 4.3.1 静态方法
 
+values（）
+
+* 返回枚举值列表
+
+valueOf（）
+
 ##### 4.3.2 成员方法
+
+toString()
+
+* 枚举变量的toString方法返回其字面值
+
+name()
+
+* 枚举变量的toString方法返回其字面值
 
 #### 4.4 带参数的枚举
 
