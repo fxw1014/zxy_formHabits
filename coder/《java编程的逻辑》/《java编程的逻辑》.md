@@ -1383,10 +1383,11 @@ new 父类/接口(参数列表){
 
 ### 4 枚举类的本质
 
-> 1. [发现自行实践实现不了网上对枚举类型的编译结果，还是寻不到太合适的解释，参考如下文章](https://segmentfault.com/a/1190000019196740,https://www.cnblogs.com/hollischuang/p/10836913.html)
+> 1. [自行实践实现不了网上对枚举类型的编译结果，还是寻不到太合适的解释，参考如下文章](https://segmentfault.com/a/1190000019196740,https://www.cnblogs.com/hollischuang/p/10836913.html)
 >     * [Java代码的编译与反编译那些事儿](https://www.cnblogs.com/hollischuang/p/10836913.html)
 >     * [javap命令与Java Dcompiler工具、IDEA自带的反编译器反编译的结果的差别及原因](https://segmentfault.com/a/1190000019196740)
-> 2. 
+> 2. 枚举中每个枚举值对应的ordinal()方法返回的`定义顺序与数组相同，均是从0开始`
+> 3. 枚举类中是含有构造方法的（不论是自定义的构造方法，还是系统默认的），且构造方法是`private`，否则编译会报错
 
 #### 4.1 不带参的枚举
 
@@ -1400,8 +1401,6 @@ public enum  EnumTest {
 
 
 #### 4.2 不带参枚举的本质
-
-
 
 ```tex
 javap EnumTest.class
@@ -1425,8 +1424,8 @@ public final class test.EnumTest extends java.lang.Enum<test.EnumTest> {
 
 使用上面命令编译后的结果
 
-1. 枚举类型是final类型，故不可被继承
-2. 三个枚举值实际上是三个静态变量，也是final的，不能被修改；
+1. 枚举类型从反编译结果来看它也是类，但编译器对它做了特殊处理
+2. `枚举值实际上是静态变量即类变量，也是final的，不能被修改；`
 3. values(),vlaueOf()等都是编译器自己添加的
 
 #### 4.3 Enum抽象类的方法
@@ -1435,9 +1434,11 @@ public final class test.EnumTest extends java.lang.Enum<test.EnumTest> {
 
 values（）
 
-* 返回枚举值列表
+* 返回枚举字面值数组，`顺序与定义时顺序相同`
 
-valueOf（）
+valueOf（param1）
+
+* 返回与param1值相同的字面常量
 
 ##### 4.3.2 成员方法
 
@@ -1449,7 +1450,385 @@ name()
 
 * 枚举变量的toString方法返回其字面值
 
-#### 4.4 带参数的枚举
+#### 4.4 枚举的Switch用法
 
-#### 4.5 带参数枚举的本质
+`枚举switch比较的是枚举值对应的ordinary()返回值`
+
+```java
+public static void switchUser(EnumTest02 enumObj){
+        switch (enumObj){
+            case BIG:
+                System.out.println("big");
+                break;
+            case MID:
+                System.out.println("mid");
+                break;
+            case SMALL:
+                System.out.println("small");
+                break;
+        }
+
+    }
+```
+
+
+
+#### 4.5 带参数的枚举
+
+#### 4.6 带参数枚举的本质
+
+<img src="assets/image-20210828100126090.png" alt="image-20210828100126090" style="zoom:50%;" />
+
+## 6. 异常
+
+> 【注】
+>
+> 1. 在程序中使用throw关键字抛出异常相当于使用了return
+
+### 6.1 异常基础
+
+>  throw关键字可以与return关键字进行对比。return代表正常退出，throw代表异常退出；return的返回位置是确定的，就是上一级调用者，而throw后执行哪行代码则经常是不确定的，由异常处理机制动态确定。
+>
+> 异常处理机制会从当前函数开始查找看谁“捕获”了这个异常，当前函数没有就查看上一层，直到主函数，如果主函数也没有，就使用默认机制，即输出异常栈信息并退出，这正是我们在屏幕输出中看到的。
+>
+> 异常是相对于return的一种退出机制，可以由系统触发，也可以由程序通过throw语句触发，异常可以通过try/catch语句进行捕获并处理，如果没有捕获，则会导致程序退出并输出异常栈信息。
+
+
+
+```java
+ public void testEx02(){
+        int a =1;
+        System.out.println(a);
+        throw new NullPointerException("haha");
+        //System.out.println(a); 不可达
+    }
+
+ public void testEx02(){
+        int a =1;
+        System.out.println(a);
+        return;
+        //System.out.println(a); 不可达
+    }
+```
+
+throw关键字与return关键字进行对比,后面的代码均为不可达，但若throw,return被包裹在if语句中则编译不会报错；
+
+
+
+
+
+```java
+ public void testEx02(){
+        int a =1;
+        System.out.println(a);
+        try {
+            throw new NullPointerException("haha");
+        } catch (NullPointerException e) {
+            e.printStackTrace();
+        }
+        //捕获异常之后代码可正常执行
+        System.out.println(a);
+    }
+```
+
+使用try-catch之后try块之外的代码便可正常执行
+
+---
+
+### 6.2 异常类
+
+#### 6.2.1 Throwable
+
+```java
+public Throwable(){}
+public Throwable(String message) {}
+public Throwable(String message, Throwable cause) {}
+public Throwable(Throwable cause) {}
+```
+
+Throwable类有两个主要参数：一个是message，表示异常消息；另一个是cause，表示触发该异常的其他异常。异常可以形成一个异常链，上层的异常由底层异常触发，cause表示底层异常
+
+---
+
+##### Throwable类中的方法
+
+```java
+public synchronized Throwable initCause(Throwable cause) {
+        if (this.cause != this)
+            throw new IllegalStateException("Can't overwrite cause with " +
+                                            Objects.toString(cause, "a null"), this);
+        if (cause == this)
+            throw new IllegalArgumentException("Self-causation not permitted", this);
+        this.cause = cause;
+        return this;
+    }
+```
+
+initCause(): Throwable的某些子类没有带cause参数的构造方法，就可以通过initCause（）方法来设置，这个方法最多只能被调用一次。
+
+
+
+```java
+fillInStackTrace()
+fillInStackTrace(int dummy)
+```
+
+fillInStackTrace将异常栈信息保存下来，它会调用非java代码：调用native方法
+
+
+
+```java
+void printStackTrace()
+void printStackTrace(PrintStream s)
+void printStackTrace(PrintWriter s)
+```
+
+printStackTrace()打印异常信息到标准错误输出流
+
+printStackTrace(PrintStream s)，void printStackTrace(PrintWriter s)打印异常信息到指定的流
+
+
+
+```java
+String getMessage()
+```
+
+getMessage()获得设置的异常message，即throwable中的成员变量detailMessage
+
+
+
+```java
+Throwable getCause()
+```
+
+getCause()获取异常的cause，即该异常的上层异常；
+
+#### 6.2.2 异常类体系
+
+<img src="assets/image-20210828113833465.png" alt="image-20210828113833465" style="zoom:70%;" />
+
+`Throwable`
+
+​	`Error:`Error表示系统错误或资源耗尽，由Java系统自己使用，应用程序不应抛出和处理
+
+​	`Exception:`Exception表示应用程序错误
+
+​		`IOException：`输入输出I/O异常
+
+​		`SQLException：`数据库SQL异常
+
+​		`RuntimeException：`运行时异常(非受检异常)
+
+​				`NullException`
+
+​				`ArrayIndexOutOfBoundsException`
+
+​				`ClassCastException`
+
+​				`...`
+
+在Exception的继承体系中可以分为两大类：受检异常和非受检异常，其中受检异常包括Exception、IOException、SQLException，`而RuntimeException及其子类都是非受检异常；Error及其子类也是未受检异常`
+
+> 受检（checked）和未受检（unchecked）的区别在于Java如何处理这两种异常。对于受检异常，Java会强制要求程序员进行处理，否则会有编译错误，而对于未受检异常则没有这个要求
+
+> 如此多不同的异常类其实并没有比Throwable这个基类多多少属性和方法，大部分类在继承父类后只是定义了几个构造方法，这些构造方法也只是调用了父类的构造方法，并没有额外的操作
+
+> 那为什么定义这么多不同的类呢？主要是为了名字不同。异常类的名字本身就代表了异常的关键信息，无论是抛出还是捕获异常，使用合适的名字都有助于代码的可读性和可维护性
+
+#### 6.2.3 自定义异常
+
+> 如果父类是RuntimeException或它的某个子类，则自定义异常也是未受检异常；如果是Exception或Exception的其他子类，则自定义异常是受检异常
+
+```java
+public class CustomException extends RuntimeException{
+        public CustomException() {
+            super();
+        }
+
+        public CustomException(String message) {
+            super(message);
+        }
+
+        public CustomException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public CustomException(Throwable cause) {
+            super(cause);
+        }
+    }
+```
+
+自定义异常，选择一个异常然后继承它，定义构造方法；
+
+`shift + ctrl + ins 调出idea粘贴板`
+
+#### 6.2.4 异常处理
+
+##### 多层级捕获异常
+
+try 后面可以跟多个catch,从前向后范围依次变大，以下代码示例
+
+```java
+try {
+  throw new CustomException("自定义异常");
+} catch (CustomException e) {
+  e.printStackTrace();
+  System.out.println(e.getMessage());
+} catch (RuntimeException e){
+  System.out.println(e.getMessage());
+}
+```
+
+上述代码中先catch自定义异常 CustomException 然后catch RuntimeException,在本例中CustomException extends RuntimeException
+
+
+
+java7 之后支持一个新语法，使用|分割符，分割开异常相当于多个catch,示例代码如下
+
+```java
+try {
+  throw new CustomException("自定义异常");
+} catch (NullPointerException | ClassCastException e) {
+//} catch (NullPointerException | RuntimeException e) { //error
+
+  e.printStackTrace();
+  System.out.println(e.getMessage());
+  System.out.println(e.getCause());
+} 
+```
+
+上面的代码中，注释行是错误示例，使用|分隔符将NullPointerException，RuntimeException分隔开会报异常，是由于RuntimeException包含了NullPointerException导致的，|分割捕获两个异常不能是包含关系
+
+
+
+`printStackTrace()感觉调用该方法打印异常信息时，是新起了一个线程打印的，因为每次输出结果的顺序都不同！`
+
+---
+
+
+
+
+
+##### `finally的用法`
+
+finally必须与try搭配使用，catch关键字识情况可有可无，下面就try-catch-finally体系中有无异常的执行顺序做一个示例，代码如下
+
+```java
+public static int FinllayTest(){
+        try {
+            System.out.println("try start");
+            int b= 1/0;//发生异常
+            System.out.println("try end");//不执行
+            return 2;//不执行
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("catch excute");//正常执行
+            return 1;//正常执行 最后执行
+
+        } finally {
+            System.out.println("finally start");//正常执行,先于return执行
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(FinllayTest());
+    }
+
+/*
+控制台打印信息如下
+try start
+catch excute
+	java.lang.ArithmeticException: / by zero
+	at test.ExceptionTest.FinllayTest(EnumTest03.java:93)
+finally start
+1
+*/
+
+/*
+将异常行int b= 1/0;注释掉，控制台打印信息如下
+try start
+try end
+finally start
+2
+*/
+```
+
+上面代码中，`当try块发生了异常`，try块异常之后代码不会被执行，异常被catch捕获在控制台打印信息"catch excute",由于最后声明了finally块，故finally块执行控制台打印"finally start"，最后返回1，控制台打印信息如上注释所示，通过运行结果可以得出:`结论：当catch中有return语句且有异常被捕获最后finally执行先于return`; 将代码中的异常行注释掉，`当try中无异常发生`，打印信息如上注释所示，可以得出`结论: try中有return时，finally先于return执行`
+
+
+
+
+
+`finally中有return语句`
+
+当finally中有return语句时，return会覆盖try,catch内的异常，针对这句话理解如下
+1. 若try-catch-finally中try块有异常，异常被cath捕获且finally中有return;这时异常是可以正常打印的；
+2. 若try-finally中try块有异常，finally中有return;这时异常信息会被覆盖；
+3. 若try-catch-finally中catch块中有异常，且finally中有return;这时catch中的异常信息不会打印，会被覆盖
+4. 若try-catch-finally中try,catch块中都有异常，且finally中有return;这时catch中的异常会被覆盖不会打印，而try中的异常信息可以正常打印
+
+【参考代码如下】
+
+```java
+public int FinllayTest(){
+        try {
+            System.out.println("try start");
+            int b= 1/0;//try中的异常信息
+            System.out.println("try end");//不执行
+            return 2;//不执行
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("catch excute");//正常执行
+            throw  new NullPointerException("haha");//catch 中的异常
+
+        } finally {
+            System.out.println("finally start");//正常执行,先于return执行
+            return 3;
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println(obj.FinllayTest());
+    }
+
+
+/*
+控制台打印信息
+try start
+catch excute
+finally start
+3
+java.lang.ArithmeticException: / by zero
+	at test.ExceptionTest.FinllayTest(EnumTest03.java:93)
+	at test.ExceptionTest.main(EnumTest03.java:108)
+*/
+
+```
+
+上面代码仅展示了情况4，try,catch块中都有异常，且finally中有return，可以看到catch中的异常信息是NullPointException并没打印出来，且最终返回值是3（finally中的return 3），将上面代码中`finally return 3`异常信息正常打印；
+
+
+
+---
+
+##### 受检异常和非受检异常
+
+受检异常即IOException,SQLExcetpion,Exception及继承这些类的子类，当在类中抛出这些异常必须处理，即必须`用try-catch包裹处理`或者`在方法处throws`，若不处理则编译报错
+
+非受检异常：在类中抛出这些异常不用默认处理，程序可以正常运行；
+
+
+
+### `summary`
+
+> 本章介绍了Java中的异常机制。在没有异常机制的情况下，唯一的退出机制是return，判断是否异常的方法就是返回值。方法根据是否异常返回不同的返回值，调用者根据不同返回值进行判断，并进行相应处理。每一层方法都需要对调用的方法的每个不同返回值进行检查和处理，程序的正常逻辑和异常逻辑混杂在一起，代码往往难以阅读理解和维护。另外，因为异常毕竟是少数情况，程序员经常偷懒，假装异常不会发生，而忽略对异常返回值的检查，降低了程序的可靠性。在有了异常机制后，程序的正常逻辑与异常逻辑可以相分离，异常情况可以集中进行处理，异常还可以自动向上传递，不再需要每层方法都进行处理，异常也不再可能被自动忽略，从而，处理异常情况的代码可以大大减少，代码的可读性、可靠性、可维护性也都可以得到提高。
+
+还是没有很深的体会，后续在日常工作中多加注意吧！
+
+
+
+
+
+
 
