@@ -1828,7 +1828,344 @@ java.lang.ArithmeticException: / by zero
 
 
 
+## 7. 常用基础类
+
+### 7.1 包装类
+
+java中有8种基本类型，每种基本类型都对应一个包装类，`每个包装类中都有一个对应的实例变量用来保存对应基本类型的值`，各个包装类中实例变量如下所示：
+
+```java
+Integer -> private final int value;
+Byte -> private final byte value;
+Short -> private final short value;
+Long -> private final long value;
+Character -> private final char value;
+Boolean -> private final boolean value;
+Float -> private final float value;
+Double -> private final double value;
+```
+
+从上面代码可以看出包装类内部存储的value值都是final类型；`即包装类值不可改变`，且`包装类在类声明中也是final`，表示不可被继承
+
+#### 7.1.1 基本用法
+
+##### `1. 包装类与基本类型的转换`
+
+```java
+class Test{
+	public static void main(String[] args) {
+		Integer integer = Integer.valueOf(1);//Integer静态方法valueOf
+		int i = integer.intValue();//Integer实例方法
+	}
+}
+```
+
+以上方法中valueOf()将基本类型转换成包装类，xxxValue()将包装类转换成基本类型,`java5之后引入的自动拆箱，自动装箱就是基于以上方法实现的？？`
+
+---
+
+##### `2. 创建包装类型的变量`
+
+创建包装类型变量推荐使用static valueOf()方法,因为相比于new Integer()方法，valueOf方法不一定会创建新的对象，有可能会去缓存中去找若有的话，则直接引用指向那块内存地址；
+
+除了Float和Double外的其他包装类，都会缓存包装类对象，减少需要创建对象的次数，节省空间，提升性能
+
+---
+
+##### `3. 常用方法`
+
+equals() 
+
+* 比较包装类对应的基本类型的值，对于Float和Double，存在和equals方法一样的问题，0.01和0.1*0.1相比的结果并不为0
+
+hashCode() 
+
+compareTo()：实现了Comparable接口重写的方法，返回值-1,0,1
+
+static valueOf(String var):将String参数值转换成对应的包装类型对象
+
+static  parseXxxx(String var):将String参数值转换成基本类型
+
+---
+
+##### `4. Number`
+
+Number是6中数值包装类的抽象父类，它含有以下方法
+
+```java
+byte byteValue()
+double doubleValue()
+float floatValue()
+int intValue
+long longValue()
+short shortValue()
+```
+
+包装类通过对应的xxxValue()方法可以获取实例变量value中存储的基本类型数值，并返回基本类型数值；
+
+---
+
+##### `5. 不可变性`
+
+包装类都是不可变类。所谓不可变是指实例对象一旦创建，就没有办法修改了，因为其value值是final类型的
+
+> 为什么要定义为不可变类呢？不可变使得程序更为简单安全，因为不用操心数据被意外改写的可能，可以安全地共享数据，尤其是在多线程的环境下
+
+---
+
+#### 7.1.2 Integer与二进制算法
+
+> 后续若碰到使用再返回来看吧
+
+---
+
+#### 7.1.3 valueOf的实现：`缓存`
+
+```java
+public static Integer valueOf(int i) {
+    if (i >= IntegerCache.low && i <= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+```
+
+```java
+private static class IntegerCache {
+    static final int low = -128;
+    static final int high;
+    static final Integer cache[];
+
+    static {
+        // high value may be configured by property
+        int h = 127;
+        String integerCacheHighPropValue =
+            sun.misc.VM.getSavedProperty("java.lang.Integer.IntegerCache.high");
+        if (integerCacheHighPropValue != null) {
+            try {
+                int i = parseInt(integerCacheHighPropValue);
+                i = Math.max(i, 127);
+                // Maximum array size is Integer.MAX_VALUE
+                h = Math.min(i, Integer.MAX_VALUE - (-low) -1);
+            } catch( NumberFormatException nfe) {
+                // If the property cannot be parsed into an int, ignore it.
+            }
+        }
+        high = h;
+
+        cache = new Integer[(high - low) + 1];//255 + 1 = 256
+        int j = low;
+        for(int k = 0; k < cache.length; k++)//256
+            cache[k] = new Integer(j++);
+
+        // range [-128, 127] must be interned (JLS7 5.1.7)
+        assert IntegerCache.high >= 127;
+    }
+
+    private IntegerCache() {}
+}
+```
+
+`在类中定义的方法可以和成员内部类、静态内部类中的任何private、public的变量进行交互`
+
+以上代码中，使用了`共享常用对象的思路，是一种常见的设计思路，它有一个名字，叫享元模式`，说通俗点就是`缓存`，即在静态成员内部类加载的时候，执行静态内部类的static代码块，会给IntegerCache.cache静态变量赋初值，伴随着类加载到方法区。默认情况下，Integer cache[] 保存了-128～127共256个整数对应的Integer对象。
+
+### 7.2 String
+
+#### 7.2.1 基本使用
+
+##### `常用方法`
+
+```java
+boolean contains(CharSequence s)
+boolean equals(Object anObject)
+int length()
+boolean matches(String regex)
+String replace(CharSequence target, CharSequence replacement)
+String replaceAll(String regex, String replacement) 
+String substring(int beginIndex, int endIndex)  
+```
+
+以上代码中：
+
+* CharSequence是一个接口，String实现了该接口
+* replace，replaceAll：当replaceAll中的regex参数不是正则表达式式，该方法的作用域replace相同；
+
+#### 7.2.2 内部实现
+
+```java
+private final char value[];
+
+public String(char value[]) {
+        this.value = Arrays.copyOf(value, value.length);
+    }
+
+public String substring(int beginIndex) {
+        if (beginIndex < 0) {
+            throw new StringIndexOutOfBoundsException(beginIndex);
+        }
+        int subLen = value.length - beginIndex;
+        if (subLen < 0) {
+            throw new StringIndexOutOfBoundsException(subLen);
+        }
+        return (beginIndex == 0) ? this : new String(value, beginIndex, subLen);
+    }
+  
+```
+
+上面代码中，`String内部用一个final类型的char数组表示字符串，String中的许多方法都是对这个char数组进行操作`，String(char value[])创建对象时，会将参数数组复制一份给String.value，substring()方法也是通过String的char数组实现截取从而创建新对象；
+
+#### 7.2.3 编码转换
+
+`Charset类`
+
+Java使用Charset类表示各种编码，它有两个常用静态方法：
+
+```java
+static Charset defaultCharset();
+static Charset forName(String charsetName)
+  
+```
+
+在上述代码中，defaultCharset方法是返回当前系统的默认编码，forName方法返回给定编码名称的charset对象；
 
 
 
+通过构造方法进行编码转换，如下面的代码
 
+```java
+```
+
+
+
+#### 7.2.4 不可变性
+
+`与包装类相似，String类的类声明中也是final，表示不可被继承，且类中也有一个final实例变量`，String中的实例变量是final char[]，一旦创建不可变；
+
+String类中提供了很多看似修改的方法，其实是通过创建新的String对象来实现的，原来的String对象不会被修改。
+
+`Arrays.copyOf`这个方法应用比较广啊
+
+```java
+class StringTest{
+    public static String appendStr(String str){
+        str += "bbb";
+        return str;
+
+    }
+
+    public static StringBuffer bufferStr(StringBuffer sb){
+        return sb.append("ccc");
+    }
+
+
+    public static void main(String[] args) {
+        String var_a = "origin";
+        StringTest.appendStr(var_a);
+        System.out.println(var_a.toString());
+
+        StringBuffer sb = new StringBuffer("origin");
+        StringBuffer sb2 = StringTest.bufferStr(sb);
+        System.out.println(sb.toString());
+    }
+
+
+}
+
+/*
+输出
+origin --该输出的结果体现了String的不可变性
+originccc --StringBuffer同一个对象最终被修改
+*/
+```
+
+
+
+参考：
+
+* [关于String的不可变性](https://www.jianshu.com/p/3d7ec97b1724)
+
+---
+
+#### 7.2.5 常量字符串
+
+字符串常量池位于`方法区`中；
+
+以下代码以String常量作为参数，创建String对象，可以看出`新生成的String的实例变量value与常量value的地址值是相同的`
+
+```java
+public String(String original) {
+        this.value = original.value;
+        this.hash = original.hash;
+    }
+```
+
+
+
+对于字符串常量池中的对象，若对象value相同，则变量是==的，即地址值相同，示例代码如下
+
+```java
+public static void main(String[] args) {
+        String a = "猪小阳";
+        String b = "猪小阳";
+        String c = "猪小阳";
+        if(a == b && b == c){
+            System.out.println("equal");//equal
+        }
+    }
+```
+
+
+
+new String对象，若参数都是字符常量，最后生成的多个对象也绝不==，示例代码如下
+
+```java
+public static void main(String[] args) {
+    String name1 = new String("猪小阳");
+    String name2 = new String("猪小阳");
+    if(name1 == name2{
+        System.out.println("equal");
+    }else {
+        System.out.println("unequal");//unequal
+    }
+}
+```
+
+在上面的代码中，new 两个String对象，并且参数都是相同的字符串常量，但是他们最终指向的并不是相同的地址值，它们在内存中的布局如下图7.1所示
+
+<img src="assets/image-20210830001337270.png" alt="image-20210830001337270" style="zoom:67%;" />
+
+​																	 图7.1 new出来的两个String的内存示意图
+
+#### 7.2.6 hashCode的缓存
+
+`为什么要在String类中定义实例变量 hash`
+
+String中hashCode值会被缓存到实例变量hash中，如下所示
+
+```java
+/** Cache the hash code for the string */
+    private int hash; // Default to 0
+```
+
+String中在调用hashCode()方法获取字符串的hashCode值时，会先去缓存`实例变量hash`中去取，若！=0则将该值作为hashCode，否则重新计算；源码如下
+
+```java
+public int hashCode() {
+        int h = hash;
+        if (h == 0 && value.length > 0) {
+            char val[] = value;
+
+            for (int i = 0; i < value.length; i++) {
+                h = 31 * h + val[i];
+            }
+            hash = h;
+        }
+        return h;
+    }
+```
+
+以上代码可以看出：hash变量缓存了hashCode方法的值，也就是说，`第一次调用hashCode方法的时候，会把结果保存在hash这个变量中，以后再调用就直接返回保存的值`
+
+参考：
+
+* [关于String的不可变性](https://www.jianshu.com/p/3d7ec97b1724)
