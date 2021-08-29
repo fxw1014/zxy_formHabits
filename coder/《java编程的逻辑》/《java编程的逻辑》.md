@@ -1435,9 +1435,15 @@ public final class test.EnumTest extends java.lang.Enum<test.EnumTest> {
 values（）
 
 * 返回枚举字面值数组，`顺序与定义时顺序相同`
+<<<<<<< HEAD
 
 valueOf（param1）
 
+=======
+
+valueOf（param1）
+
+>>>>>>> 270736437bf7787df9a5809adb6f9150607fa899
 * 返回与param1值相同的字面常量
 
 ##### 4.3.2 成员方法
@@ -2166,6 +2172,6 @@ public int hashCode() {
 
 以上代码可以看出：hash变量缓存了hashCode方法的值，也就是说，`第一次调用hashCode方法的时候，会把结果保存在hash这个变量中，以后再调用就直接返回保存的值`
 
-参考：
+##### 参考：
 
 * [关于String的不可变性](https://www.jianshu.com/p/3d7ec97b1724)
