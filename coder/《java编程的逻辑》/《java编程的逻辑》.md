@@ -2090,6 +2090,12 @@ originccc --StringBuffer同一个对象最终被修改
 
 * [关于String的不可变性](https://www.jianshu.com/p/3d7ec97b1724)
 
+以上参考博文的讨论
+
+1. String如何实现不可变
+2. 这样做有什么好处
+3. 不存在绝对的不可变
+
 ---
 
 #### 7.2.5 常量字符串
@@ -2141,6 +2147,43 @@ public static void main(String[] args) {
 <img src="assets/image-20210830001337270.png" alt="image-20210830001337270" style="zoom:67%;" />
 
 ​																	 图7.1 new出来的两个String的内存示意图
+
+
+
+`String对+的重载`
+
+String中字符串相加，内部实现是通过StringBuilder来拼接的，具体源代码与反编译如下
+
+```java
+ public static void main(String[] args) throws Exception {
+       String a = "123";
+       a+= "456";
+        System.out.println(a);
+    }
+
+
+
+public static void main(java.lang.String[]) throws java.lang.Exception;
+    Code:
+       0: ldc           #2                  // String 123
+       2: astore_1
+       3: new           #3                  // class java/lang/StringBuilder
+       6: dup
+       7: invokespecial #4                  // Method java/lang/StringBuilder."<init>":()V 调用StringBuilder的无参构造方法，调用父类的初始化方法
+      10: aload_1
+      11: invokevirtual #5                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      14: ldc           #6                  // String 456
+      16: invokevirtual #5                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      19: invokevirtual #7                  // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      22: astore_1
+      23: getstatic     #8                  // Field java/lang/System.out:Ljava/io/PrintStream;
+      26: aload_1
+      27: invokevirtual #9                  // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      30: return
+}
+```
+
+
 
 #### 7.2.6 hashCode的缓存
 
