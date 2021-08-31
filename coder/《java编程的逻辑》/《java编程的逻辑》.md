@@ -2218,3 +2218,103 @@ public int hashCode() {
 ##### 参考：
 
 * [关于String的不可变性](https://www.jianshu.com/p/3d7ec97b1724)
+
+----
+
+### 7.3 StringBuilder
+
+> StringBuilder线程不安全，StringBuffer线程安全
+>
+> String a = "123" + "456" 底层是调用StringBuilder实现的
+
+---
+
+
+
+#### 7.3.1 常用方法
+
+StringBuilder类中常用方法如下：
+
+```java
+public StringBuilder append(String str);
+public String toString();
+public StringBuilder();
+
+```
+
+AbstractStringBuilder类中常用方法如下：
+
+```java
+public void setLength(int newLength);
+```
+
+---
+
+
+
+#### 7.3.2 jdk底层实现
+
+StringBuilder底层存储与String类似，StringBuilder类也封装了一个字符数组，定义如下：
+
+```java
+char[] value;//默认包访问权限
+```
+
+上面代码是StringBuilder父类AbstractStringBuilder中定义的成员变量value，与String内部定义的字符数组valuey有两点不同
+
+1. String.value是private final修改的,AbstractStringBuilder.value 是包访问权限(default)可以被同包中的类修改，即它被访问的位置只能在同包中的类中，在包外无法访问；
+2. String.value中的没有空的位置，而AbstractStringBuilder.value中有空的位置，AbstractStringBuilder.value中实际存储的字符个数用成员变量 AbstractStringBuilder.count存储,
+
+```java
+int count;
+```
+
+上面代码是AbstractStringBuilder.count中实际存储用到的字符个数
+
+---
+
+StringBuilder中的默认构造方法调用了父类的带参构造方法并赋16默认值，代码如下
+
+```java
+public StringBuilder() {
+        super(16);
+    }
+
+ AbstractStringBuilder(int capacity) {
+        value = new char[capacity];
+    }
+```
+
+上面代码中，当我们调用StringBuilder无参构造方法创建对象时会调用父类构造方法AbstractStringBuilder(int capacity),capacity默认是16，即AbstractStringBuilder.value的初始长度是16；
+
+---
+
+append()源码如下
+
+```java
+//StringBuilder.java
+public StringBuilder append(String str) {
+        super.append(str);
+        return this;
+    }
+
+//AbstractStringBuilder.java
+public AbstractStringBuilder append(String str) {
+        if (str == null)
+            return appendNull();
+        int len = str.length();
+        ensureCapacityInternal(count + len);
+        str.getChars(0, len, value, count);
+        count += len;
+        return this;
+    }
+//AbstractStringBuilder.java
+private void ensureCapacityInternal(int minimumCapacity) {
+        // overflow-conscious code
+        if (minimumCapacity - value.length > 0) {
+            value = Arrays.copyOf(value,
+                    newCapacity(minimumCapacity));
+        }
+    }
+```
+
