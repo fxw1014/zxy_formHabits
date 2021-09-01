@@ -2308,6 +2308,20 @@ public AbstractStringBuilder append(String str) {
         count += len;
         return this;
     }
+
+//AbstractStringBuilder.java
+private AbstractStringBuilder appendNull() {
+        int c = count;
+        ensureCapacityInternal(c + 4);
+        final char[] value = this.value;
+        value[c++] = 'n';
+        value[c++] = 'u';
+        value[c++] = 'l';
+        value[c++] = 'l';
+        count = c;
+        return this;
+    }
+
 //AbstractStringBuilder.java
 private void ensureCapacityInternal(int minimumCapacity) {
         // overflow-conscious code
@@ -2316,5 +2330,152 @@ private void ensureCapacityInternal(int minimumCapacity) {
                     newCapacity(minimumCapacity));
         }
     }
+
+private int newCapacity(int minCapacity) {
+        // overflow-conscious code
+        int newCapacity = (value.length << 1) + 2;//左移一位 容量在原来的基础上扩大一倍
+        if (newCapacity - minCapacity < 0) {//再次判断容量是否沟通，若不够则将参数作为容量
+            newCapacity = minCapacity;
+        }
+        return (newCapacity <= 0 || MAX_ARRAY_SIZE - newCapacity < 0)
+            ? hugeCapacity(minCapacity)
+            : newCapacity;
+    }
+```
+
+上面代码大致调用过程：
+
+1. StringBuilder调用append(),在append()中调用父类的append(str)
+2. 父类AbstractStringBuilder中append（str），判断str是否是null，若是null，str = "null"
+3. 判断len(len = str.length + count)的长度与内部char数组value.length的大小关系，若大则将内部数组扩容，`扩容规则：先将length*2得到新长度lenNew ，比较lenNew与len的关系，若lenNew<len,则将len作为扩容数组的长度`；
+4. 在count位上+str内容
+
+`若是扩容，最后vlaue肯定指向了新的地址！这就是为什么value不声明成final`
+
+---
+
+​	StringBuilder中的toString()方法，源代码如下
+
+```java
+public String toString() {
+        // Create a copy, don't share the array
+        return new String(value, 0, count);
+    }
+
+public String(char value[], int offset, int count) {
+        if (offset < 0) {
+            throw new StringIndexOutOfBoundsException(offset);
+        }
+        if (count <= 0) {
+            if (count < 0) {
+                throw new StringIndexOutOfBoundsException(count);
+            }
+            if (offset <= value.length) {
+                this.value = "".value;
+                return;
+            }
+        }
+        // Note: offset or count might be near -1>>>1.
+        if (offset > value.length - count) {
+            throw new StringIndexOutOfBoundsException(offset + count);
+        }
+        this.value = Arrays.copyOfRange(value, offset, offset+count);
+    }
+
+
+public static char[] copyOfRange(char[] original, int from, int to) {
+        int newLength = to - from;
+        if (newLength < 0)
+            throw new IllegalArgumentException(from + " > " + to);
+        char[] copy = new char[newLength];
+        System.arraycopy(original, from, copy, 0,
+                         Math.min(original.length - from, newLength));
+        return copy;
+    }
+```
+
+上面代码实现的是`StringBuilder`到`String`的转换，在`toString()`方法中调用`String`方法的构造函数，将value字符数组中0到count-1位的字符通过Arrays方法`生成一个新的字符数组strValue`,将该strValue作为String内部的字符数组；
+
+【注1】：上述基于`StringBuilder.value`,`StringBuilder.Count`生成的新value数组地址值与`StringBuilder.value`必然是不同的，若是相同的话，通过`StringBuilder`对象可以修改`StringBuilder.value`进而修改`String.value`从而导致String值改变，如此便违背了`String值不可变`；
+
+【注2】: String值不可变是依赖两个原则实现的
+
+​	1. String内部是一个private final char[] value,保证了地址不变性
+
+​	2. String类中所有的操作均返回新的字符串对象，即生成一个新的value,而不会在原value做修改，保证了数组内部值不变
+
+---
+
+【参考】：
+
+* [Java中的String为什么是不可变的？ -- String源码分析](https://blog.csdn.net/zhangjg_blog/article/details/18319521)
+
+
+
+---
+
+#### 7.3.3 String的+和+=运算符
+
+##### 7.3.3.1 原理
+
+> Java中，`String`可以直接使用+和+=运算符，这是Java编译器提供的支持，背后，Java编译器一般会生成`StringBuilder`, +和+=操作会转换为`append`
+
+String字符串直接+，底层实现是通过创建`StringBuilder`对象`sb`，然后`sb`调用`append`方法实现字符串的拼接；
+
+##### 7.3.3.2 使用场景【勘误】
+
+>  通过上一个章节的分析，我们知道`String`字符串相加拼接的底层实现是编译帮我们自动转换的，那么为什么在代码编写过程中在碰到大量字符串拼接时要求使用`StringBuilder`呢?
+>
+> 因为在某些情况下，编译器会创建过多的`StringBuilder`对象；
+
+<font color = 'red'>【注】：经编译实测，并不会创建过多的StringBuilder对象，验证如下</font>
+
+java源代码如下：
+
+```java
+public static void main(String[] args) {
+        String hello = "hello";
+        for (int i = 0; i < 3; i++) {
+            hello += ",world";
+            
+        }
+        System.out.println(hello);
+    }
+
+
+
+
+
+```
+
+
+
+以上源码对应的.class文件使用javap -c 反编译后的内容如下：
+
+```java
+ public static void main(java.lang.String[]);
+    Code:
+       0: ldc           #5                  // String hello
+       2: astore_1
+       3: iconst_0
+       4: istore_2
+       5: iload_2
+       6: iconst_3
+       7: if_icmpge     36
+      10: new           #6                  // class java/lang/StringBuilder
+      13: dup
+      14: invokespecial #7                  // Method java/lang/StringBuilder."<init>":()V
+      17: aload_1
+      18: invokevirtual #8                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      21: ldc           #9                  // String ,world
+      23: invokevirtual #8                  // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+      26: invokevirtual #10                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+      29: astore_1
+      30: iinc          2, 1
+      33: goto          5
+      36: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;
+      39: aload_1
+      40: invokevirtual #12                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
+      43: return
 ```
 
