@@ -2430,6 +2430,8 @@ String字符串直接+，底层实现是通过创建`StringBuilder`对象`sb`，
 
 <font color = 'red'>【注】：经编译实测，并不会创建过多的StringBuilder对象，验证如下</font>
 
+​	<font color = 'red'>【A】：以上回答错误，尴尬至极，String循环拼接字符串时，会生成多个StringBilder对象！之所以有上述发言是因为我没看懂反编译的汇编代码！！！</font>
+
 java源代码如下：
 
 ```java
@@ -2461,8 +2463,8 @@ public static void main(String[] args) {
        4: istore_2
        5: iload_2
        6: iconst_3
-       7: if_icmpge     36
-      10: new           #6                  // class java/lang/StringBuilder
+       7: if_icmpge     36   //如果一个int类型值大于或者等于另外一个int类型值，则跳转   判断循环条件开始循环
+      10: new           #6                  // class java/lang/StringBuilder 每次循环创建新的对象
       13: dup
       14: invokespecial #7                  // Method java/lang/StringBuilder."<init>":()V
       17: aload_1
@@ -2472,10 +2474,18 @@ public static void main(String[] args) {
       26: invokevirtual #10                 // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
       29: astore_1
       30: iinc          2, 1
-      33: goto          5
+      33: goto          5										//无条件跳转指令
       36: getstatic     #11                 // Field java/lang/System.out:Ljava/io/PrintStream;
       39: aload_1
       40: invokevirtual #12                 // Method java/io/PrintStream.println:(Ljava/lang/String;)V
       43: return
 ```
+
+<font color ='red'>对上面代码做简要解读：</font>
+
+`7: if_icmpge  36`：进行循环条件判断，是否进入循环体，还是直接跳转36 
+
+`10: new           #6 `: 循环体内创建StringBuilder对象
+
+`33: goto          5`: 无条件跳转指令，即表示无条件跳转到命令行5，重新判断循环变量
 
