@@ -2499,7 +2499,7 @@ public static void main(String[] args) {
 
 #### 7.4.1 常用方法介绍
 
-##### 7.4.1.1 toString(dataType var)
+##### 7.4.1.1 数组形式的字符串
 
 toString方法，将数组中值输出成"数组形式的字符串"；
 
@@ -2516,15 +2516,23 @@ System.out.println(Arrays.toString(ints));//[1, 2, 3]
 
 ---
 
-##### 7.4.1.2 sort(dataType var)
+##### 7.4.1.2 排序
 
-2.1 普通型排序
+> sort(dataType var)//仅传入数组的参数的sort方法
+
+1. ### 普通型排序
 
 ```java
-int[] ints = {1, 5, 3,4,2};
-System.out.println(Arrays.toString(ints));//[1, 2, 3, 4, 5]
+ public static void main(String[] args) {
+        int[] ints = {1, 5, 3,4,2};
+        Arrays.sort(ints);
+        System.out.println(Arrays.toString(ints));//[1, 2, 3, 4, 5]
 
-String[] strs = {"323","2341","456"};
+        String[] strs = {"323","2341","456"};
+        Arrays.sort(strs);
+        System.out.println(Arrays.toString(strs));//[2341, 323, 456]
+
+    }
 
 ```
 
@@ -2674,7 +2682,7 @@ public final class Integer extends Number implements Comparable<Integer> {
 
 > `Integer类`中的`compare()`方法中三目运算符嵌套得到比较结果，<font color = 'red'>这种写法虽然可读性较差，但很简洁!COOL!</font>
 
-上面代码是`Integer`类定义，它也实现了`Comparable`接口,所以我们可以得出要调用`Arrays.sort(DataType var)`必须实现`Comparable`接口,<font color = 'red'>事实上工具类`Arrays,Collections`调用对应的排序方法`sort()`对引用类型进行排序，若不指定`Comparator`接口的情况下，都要求必须实现`Comparable`接口！</font>
+上面代码是`Integer`类定义，它也实现了`Comparable`接口,所以我们可以得出要调用`Arrays.sort(DataType var)`进行排序必须实现`Comparable`接口,<font color = 'red'>事实上工具类`Arrays,Collections`调用对应的排序方法`sort()`对引用类型进行排序，若参数中没有`Comparator`接口的情况下，都要求必须实现`Comparable`接口！</font>
 
 
 
@@ -2774,14 +2782,16 @@ public class Person implements Comparable<Person>{
 
 
 
-2.2 "升级"定制排序
+2. ### "升级"定制排序
 
-上面的排序中，排序的规则都是`jdk`内部定好的，例如："均是升序"，"字符串排序是每个字符对比"等，那我们如果需要自定义排序规则要怎么做呢,`sort`重载方法中提供了如下两个方法
+上面的排序中，排序的规则都是<font color = 'red'>"内部"</font>定好的，例如："均是升序"，"字符串排序是每个字符对比"等，那如果我们在特殊场景下有特定排序规则的需要该怎么办呢？
 
-```java
-public static <T> void sort(T[] a, Comparator<? super T> c);
-public static <T> void sort(T[] a, int fromIndex, int toIndex,Comparator<? super T> c);
-```
+1. 直接去类定义中去修改`compareTo()`方法,但是这样可能会导致历史代码冲突，需要重新评估对原系统是否有影响；
+
+2. 传递方法参数`Comparator`接口,在类外自定义排序规则,`sort`重载方法中提供了如下两个方法
+
+    > public static <T> void sort(T[] a, Comparator<? super T> c);
+    > public static <T> void sort(T[] a, int fromIndex, int toIndex,Comparator<? super T> c);
 
 上面代码的两个方法中，均涉及`Comparator`接口的使用！看来`定制排序`的秘诀就在这个接口中，下面让我们一起探索一下这个接口
 
@@ -2795,4 +2805,188 @@ public interface Comparator<T> {
 
 上面代码中列出了`Comparator`接口中的待实现方法，`compare(T o1, T o2)`便是实现`定制排序`的关键，
 
-`comparable`
+我们想象这样一种使用场景，当`Person`年龄相同的时候，我们希望可以根据`name`中每个字母进行升序排序，即年龄相同字母较小排在前面，下面让我们在不修改Person类的情况下，<font color = 'red'>在类外定义排序规则实现上述排序规则</font>
+
+```java
+public static void main(String[] args) {
+        //创建Person类数组zx
+        Person ps1 = new Person("z", 5);
+        Person ps2 = new Person("x", 3);
+        Person ps3 = new Person("y", 10);
+        Person ps4 = new Person("c", 7);
+        Person ps5 = new Person("a", 7);
+        Person[] psStr = {ps1, ps2, ps3, ps4, ps5};
+       
+
+        //按照年龄，姓名进行排序 匿名内部类写法
+        /*Arrays.sort(psStr, new Comparator<Person>() {
+            @Override
+            public int compare(Person p1, Person p2) {
+                return p1.getAge() > p2.getAge() ?
+                        1 : (p1.getAge() < p2.getAge() ? -1 : (p1.getName().compareTo(p2.getName())));
+            }
+        });*/
+        //按照年龄，姓名进行排序 lambda表达式写法
+        Arrays.sort(psStr, (p1, p2) -> {
+                    return p1.getAge() > p2.getAge() ?
+                            1 : (p1.getAge() < p2.getAge() ? -1 : (p1.getName().compareTo(p2.getName())));
+                }
+
+        );
+        System.out.println(Arrays.toString(psStr));//[Person{name='x', age=3}, Person{name='z', age=5}, Person{name='a', age=7}, Person{name='c', age=7}, Person{name='y', age=10}]
+
+
+
+    }
+```
+
+以上代码在`Arrays.sort`方法中传递了`Comparator`接口，并使用`Lambda`表达式实现了该接口生成一个匿名内部类对象，该对象的`compare`方法实现了"当`Person`年龄相同的时候，我们希望可以根据`name`中每个字母进行升序排序";
+
+###### 【Note】: JDK中Comparator接口的实现
+
+> JDK中针对Comparator接口有一些特殊实现：Collections类中有两个静态方法，可以返回逆序的Comparator
+>
+> * public static <T> Comparator<T> reverseOrder() ;
+>     public static <T> Comparator<T> reverseOrder(Comparator<T> cmp) ;
+
+下面使用Collections类中返回的Comparator接口，对字符串数组进行反转；
+
+```java
+public static void main(String[] args) {
+        //创建Person类数组zx
+        Person ps1 = new Person("z", 5);
+        Person ps2 = new Person("x", 3);
+        Person ps3 = new Person("y", 10);
+        Person ps4 = new Person("c", 7);
+        Person ps5 = new Person("a", 7);
+        Person[] psStr = {ps1, ps2, ps3, ps4, ps5};
+        System.out.println(Arrays.toString(psStr));//[Person{name='x', age=3}, Person{name='z', age=5}, Person{name='c', age=7}, Person{name='a', age=7}, Person{name='y', age=10}]
+        Arrays.sort(psStr, Collections.reverseOrder());//[Person{name='y', age=10}, Person{name='c', age=7}, Person{name='a', age=7}, Person{name='z', age=5}, Person{name='x', age=3}]
+        System.out.println(Arrays.toString(psStr));
+        
+    }
+```
+
+
+
+###### 【Note】: 策略模式
+
+> 传递比较器Comparator给sort方法，体现了程序设计中一种重要的思维方式。将不变和变化相分离，排序的基本步骤和算法是不变的，但按什么排序是变化的，sort方法将不变的算法设计为主体逻辑，而将变化的排序方式设计为参数，允许调用者动态指定，这也是一种常见的设计模式，称为策略模式，不同的排序方式就是不同的策略。
+
+###### 【Note】: 排序算法
+
+快速排序
+
+归并排序
+
+冒泡排序
+
+
+
+---
+
+##### 7.4.1.3 查找
+
+二分查找
+
+针对<font color = 'red'>已排序数组</font>，返回指定数或对象在数组中的索引位置；
+
+> public static int binarySearch(int[] a, int key) ；
+>
+> public static int binarySearch(int[] a, int fromIndex, int toIndex,int key) ；
+>
+> public static int binarySearch(Object[] a, Object key) ;
+>
+> public static int binarySearch(Object[] a, int fromIndex, int toIndex,Object key) ;
+>
+> public static <T> int binarySearch(T[] a, T key, Comparator<? super T> c) ;
+>
+> public static <T> int binarySearch(T[] a, int fromIndex, int toIndex,T key, Comparator<? super T> c) ;
+
+下面是二分法的`java`实现
+
+```java
+public static int binarySearch(int[] srcArr,int fromIndex ,int toIndex ,int key){
+        while (toIndex >=                            fromIndex){
+            int mid = (toIndex - fromIndex )/2 + fromIndex;
+            if(srcArr[mid] > key){
+                toIndex = mid -1;
+            }else if(srcArr[mid] < key){
+                fromIndex = mid + 1;
+            }else {
+                return mid;
+            }
+        }
+        return -1;
+
+    }
+
+
+
+    public static int binarySearchDiGUI(int[] srcArr,int fromIndex ,int toIndex ,int key){
+        if(fromIndex > toIndex){
+            return -1;
+        }
+        int mid = (toIndex - fromIndex )/2 + fromIndex;
+        if(srcArr[mid] > key){
+            return binarySearch2(srcArr,fromIndex,mid-1,key);
+        }else if(srcArr[mid] < key){
+            return binarySearch2(srcArr,mid+1,toIndex,key);
+        }else {
+            return mid;
+        }
+
+    }
+```
+
+
+
+---
+
+##### 7.4.1.3 数组比较
+
+> public static boolean equals(int[] a, int[] a2);
+>
+> public static boolean equals(Object[] a, Object[] a2);
+>
+> public static boolean deepEquals(Object[] a1, Object[] a2) ;
+
+* `deepEquals`可以比较多维数组中的内容是否相同，顺序是否相同
+* 当参数是一维数组时，使用`equals`与`deepEquals`没有区别(内容是否相同，顺序是否相同)；
+* `deepEquals`参数只能接受引用类型数组
+
+```java
+public static void main(String[] args) {
+        //创建Person类数组zx
+        Person ps1 = new Person("z", 5);
+        Person ps2 = new Person("x", 3);
+        Person ps3 = new Person("y", 10);
+        Person ps4 = new Person("c", 7);
+        Person ps5 = new Person("a", 7);
+        Person[] psStr = {ps1, ps2, ps3, ps4, ps5};
+        Person[] psStr2 = {ps1, ps2, ps3, ps4, ps5};
+
+        System.out.println(Arrays.equals(psStr, psStr2));//true
+        System.out.println(Arrays.deepEquals(psStr, psStr2));//true
+
+
+        Person[][] psStr3 = {{ps1, ps2, ps3, ps4, ps5},{ps1, ps2, ps3, ps4, ps5}};
+        Person[][] psStr4 = {{ps1, ps2, ps3, ps4, ps5},{ps1, ps2, ps3, ps4, ps5}};
+        System.out.println(Arrays.equals(psStr3, psStr4));//明明相等却返回 false
+        System.out.println(Arrays.deepEquals(psStr3, psStr4));//true
+        System.out.println("----------------");
+
+
+    }
+```
+
+##### 
+
+---
+
+7.4.1.4 数组的复制
+
+> public static <T> T[] copyOf(T[] original, int newLength);
+>
+> public static int[] copyOf(int[] original, int newLength);
+
