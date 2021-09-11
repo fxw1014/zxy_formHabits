@@ -2489,3 +2489,310 @@ public static void main(String[] args) {
 
 `33: goto          5`: 无条件跳转指令，即表示无条件跳转到命令行5，重新判断循环变量
 
+### 7.4 Arrays
+
+> * 数组是存储多个同类型元素的基本数据结构
+> * 数组中的元素在内存连续存放,可以通过数组下标直接定位任意元素
+> * `学习Arrays的用法，就可以“避免重新发明轮子”，直接使用，学习它的实现原理，就可以在需要的时候自己实现它不具备的功能。`
+> * Arrays是个工具类，类中的方法都是静态方法；且不能创建Arrays类，其构造函数是private类型
+>     * `Arrays不可被继承。由于构造方法private`
+
+#### 7.4.1 常用方法介绍
+
+##### 7.4.1.1 toString(dataType var)
+
+toString方法，将数组中值输出成"数组形式的字符串"；
+
+```java
+int[] ints = {1, 2, 3};
+System.out.println(ints.toString());//[I@22d8cfe0
+System.out.println(Arrays.toString(ints));//[1, 2, 3]
+
+```
+
+当我们想查看字符串内容或其他类内容时，我们可以直接`System.out.println/toString()`,但是当我们想查看数组内容时，使用以上方式查看仅能看到一串特殊含义的字符，Arrays.toString()方法便是解决这个问题，用于输出查看字符串的；
+
+该方法针对多种类型有多个重载方法；
+
+---
+
+##### 7.4.1.2 sort(dataType var)
+
+2.1 普通型排序
+
+```java
+int[] ints = {1, 5, 3,4,2};
+System.out.println(Arrays.toString(ints));//[1, 2, 3, 4, 5]
+
+String[] strs = {"323","2341","456"};
+
+```
+
+sort方法还有多个类型的重载方法；sort方法中参数中仅有要排序数组，默认是升序排序
+
+###### 【Q】：默认排序是如何实现的?
+
+> 看到此处你是否会好奇默认排序是如何实现的，若重载方法的参数是`int`数组，默认排序无非是数字之间的大小比对，交换顺序，那引用类型是如何比较的呢？比较在哪里进行定义的？是否所有的引用类型（我们自定义地的）都可以比较？
+
+下面我们自定义Person类，定义Person类数组，使用`sort()`方法对Person按年龄进行升序排列
+
+```java
+public class Person {
+    private String name;
+    private int age;
+
+    public Person() {
+    }
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Person person = (Person) o;
+
+        if (age != person.age) return false;
+        return name != null ? name.equals(person.name) : person.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + age;
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+
+public static void main(String[] args) {
+  //创建Person类数组zx
+  Person ps1 = new Person("z",5);
+  Person ps2 = new Person("x",3);
+  Person ps3 = new Person("y",10);
+  Person[] psStr = {ps1,ps2,ps3};
+  //对应person按照年龄进行排序
+  Arrays.sort(psStr);//java.lang.ClassCastException: test.domain.Person cannot be cast to java.lang.Comparable 异常从底层往上逐层抛出 【异常栈】
+  System.out.println(Arrays.toString(psStr));
+}
+```
+
+执行以上代码时，抛出了异常`java.lang.ClassCastException: test.domain.Person cannot be cast to java.lang.Comparable`,这是为什么呢？为什么会发生类型转换异常，下面我们来稍微跟踪一下代码
+
+```java
+public static void sort(Object[] a) {
+        if (LegacyMergeSort.userRequested)
+            legacyMergeSort(a);
+        else
+            ComparableTimSort.sort(a, 0, a.length, null, 0, 0);
+}
+
+static void sort(Object[] a, int lo, int hi, Object[] work, int workBase, int workLen) {
+  ...   
+            int initRunLen = countRunAndMakeAscending(a, lo, hi);
+  ...
+}
+
+
+
+private static int countRunAndMakeAscending(Object[] a, int lo, int hi) {
+        assert lo < hi;
+        int runHi = lo + 1;
+        if (runHi == hi)
+            return 1;
+
+        // Find end of run, and reverse range if descending
+        if (((Comparable) a[runHi++]).compareTo(a[lo]) < 0) { // Descending
+            while (runHi < hi && ((Comparable) a[runHi]).compareTo(a[runHi - 1]) < 0)
+                runHi++;
+            reverseRange(a, lo, runHi);
+        } else {                              // Ascending
+            while (runHi < hi && ((Comparable) a[runHi]).compareTo(a[runHi - 1]) >= 0)
+                runHi++;
+        }
+
+        return runHi - lo;
+    }
+
+```
+
+上面代码中，在执行到`countRunAndMakeAscending`方法时，会将需要排序数组a中的元素转换成`Comparable`对象，而`Comparable`是个接口，但我们的`Person`类并没与实现这个接口，导致报错！
+
+那为什么String就可以直接比较呢？它是不是实现了`Comparable`接口？我们来看下`String`的定义
+
+```java
+public final class String implements java.io.Serializable, Comparable<String>, CharSequence {
+  ......
+}
+```
+
+上面代码是`String`类的定义，可以看到它实现了`Comparable`接口,那`Integer`类呢？我们来看下`Integer`的类定义
+
+```java
+public final class Integer extends Number implements Comparable<Integer> {
+ 	 	...	
+      
+    public int compareTo(Integer anotherInteger) {
+        return compare(this.value, anotherInteger.value);
+    }
+  
+  
+    public static int compare(int x, int y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+}
+```
+
+###### 【Note】：三目运算嵌套
+
+> `Integer类`中的`compare()`方法中三目运算符嵌套得到比较结果，<font color = 'red'>这种写法虽然可读性较差，但很简洁!COOL!</font>
+
+上面代码是`Integer`类定义，它也实现了`Comparable`接口,所以我们可以得出要调用`Arrays.sort(DataType var)`必须实现`Comparable`接口,<font color = 'red'>事实上工具类`Arrays,Collections`调用对应的排序方法`sort()`对引用类型进行排序，若不指定`Comparator`接口的情况下，都要求必须实现`Comparable`接口！</font>
+
+
+
+下面我们将`Person类`改造一下，让它实现`Comparable接口`,代码如下
+
+```java
+public static void main(String[] args) {
+        //创建Person类数组zx
+        Person ps1 = new Person("z",5);
+        Person ps2 = new Person("x",3);
+        Person ps3 = new Person("y",10);
+        Person[] psStr = {ps1,ps2,ps3};
+        //对应person按照年龄进行排序
+        Arrays.sort(psStr);
+        System.out.println(Arrays.toString(psStr));//[Person{name='x', age=3}, Person{name='z', age=5}, Person{name='y', age=10}]
+    }
+
+
+
+public class Person implements Comparable<Person>{
+    private String name;
+    private int age;
+
+    public Person() {
+    }
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Person person = (Person) o;
+
+        if (age != person.age) return false;
+        return name != null ? name.equals(person.name) : person.name == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + age;
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+
+    /**
+     *
+     * @param out
+     * @return
+     */
+    @Override
+    public int compareTo(Person out) {
+        //比较Person的年龄
+        //this.age > out.age return 1;
+        //this.age < out.age return -1;
+        //this.age == out.age return 0;
+        if(this.age > out.age){
+            return 1;
+        }else if(this.age < out.age){
+            return -1;
+        }else{
+            return 0;
+        }
+    }
+}
+```
+
+现在上面代码`Person数组`便可以根据`person年龄`asc排序了；
+
+
+
+2.2 "升级"定制排序
+
+上面的排序中，排序的规则都是`jdk`内部定好的，例如："均是升序"，"字符串排序是每个字符对比"等，那我们如果需要自定义排序规则要怎么做呢,`sort`重载方法中提供了如下两个方法
+
+```java
+public static <T> void sort(T[] a, Comparator<? super T> c);
+public static <T> void sort(T[] a, int fromIndex, int toIndex,Comparator<? super T> c);
+```
+
+上面代码的两个方法中，均涉及`Comparator`接口的使用！看来`定制排序`的秘诀就在这个接口中，下面让我们一起探索一下这个接口
+
+```java
+public interface Comparator<T> {
+  int compare(T o1, T o2);
+  boolean equals(Object obj);
+
+}
+```
+
+上面代码中列出了`Comparator`接口中的待实现方法，`compare(T o1, T o2)`便是实现`定制排序`的关键，
+
+`comparable`
