@@ -2980,7 +2980,7 @@ public static void main(String[] args) {
     }
 ```
 
-##### 
+
 
 ---
 
@@ -2989,4 +2989,362 @@ public static void main(String[] args) {
 > public static <T> T[] copyOf(T[] original, int newLength);
 >
 > public static int[] copyOf(int[] original, int newLength);
+>
+> public static native void arraycopy(Object src,  int  srcPos, Object dest, int destPos,int length);
+
+```java
+public static void main(String[] args) {
+        int[] ints = {1, 5, 3, 4, 2};
+        int[] newInts = Arrays.copyOf(ints, ints.length -1 );
+        System.out.println(Arrays.toString(newInts));//[1, 5, 3, 4]
+        System.out.println(newInts);//[I@22d8cfe0
+        System.out.println(ints);//[I@579bb367 新赋值的数组与原数组在内存中不是指向同一个块地址！
+        System.out.println("System.arraycopy");
+        System.arraycopy(newInts,2,ints,3,1);
+        System.out.println(Arrays.toString(ints));//[1, 2, 3, 3, 5]
+ 			 System.out.println(ints);//[I@579bb367
+
+    }
+```
+
+`copyOf()`
+
+* 参数`original`表示源数组，`newLength`表示需要复制原数组的长度，若`newLength = original.length`则表示将`original数组`完全复制一份，然后通过`copyOf()`返回一个新数组
+* <font color ='red'>与源数组地址值不同！</font>
+
+`arraycopy()`
+
+* 将源数组`src`从数组下标`srcPos`开始，复制`length`位到目标数组`dest`的数组下标`destPos`,向后覆盖`length`位；最终`dest`数组的值会发生改变
+* 若`dest`从数组下标`desPos`到`dest.length-1`的长度不够`length`位,则会抛出异常，数组下标越界异常
+
+###### 【注】：`arraycopy`方法的几点注意
+
+1. 当源数组是引用类型的数组的时，目标数组中从源数组中复制得到的元素与源数组中被复制的元素指向的地址值相同，验证代码如下
+
+    ```java
+    public static void main(String[] args) {
+            //创建Person类数组zx
+            Person ps1 = new Person("z", 5);
+            Person ps2 = new Person("x", 3);
+            Person ps3 = new Person("y", 10);
+            Person ps4 = new Person("c", 7);
+            Person ps5 = new Person("a", 7);
+            Person ps6 = new Person("fan", 7);
+            Person[] psStr2 = {ps1, ps2, ps3, ps4, ps5};
+            Person[] psStr5 = new Person[5];
+            //将数组psStr2的所有值复制到psStr5中
+            System.arraycopy(psStr2,0,psStr5,0,psStr2.length);
+            //改变原数组psStr2中第一个元素对象的属性值
+            psStr2[0].setName("xiu");
+            //检验目标数组psStr5中第一个元素的值是否发生改变
+            System.out.println(psStr5[0]);//Person{name='xiu', age=5} 发生改变，同源数组中第一个元素的值
+            System.out.println("--------------");
+            //改变原数组psStr2中第一个元素的值的引用
+            psStr2[0] = ps6;
+            System.out.println("change");
+            //检验目标数组psStr5中第一个元素的值是否发生改变
+            System.out.println(psStr5[0]);//Person{name='xiu', age=5} 未发生改变，当源数组一个元素的引用地址值发生改变时对目标数组第一个元素没有影响
+            System.out.println(psStr2[0] == psStr5[0]);//false
+    
+    
+    
+    
+        }
+    ```
+
+    * 上面代码中改变了源数组中第一个元素对象的`name`属性，导致目标数组第一个元素的`name`属性同样发生了改变；同样目标数组中元素的对象属性改变时，源数组中对应元素值也会发生改变
+    * 但当源数组中第一个元素的引用发生改变时，目标数组第一个元素的值并未随之发生变化；
+
+2. 当源数组是<font color ='red'>基本数据类型或者String类型数组</font>时，修改源数组的值不会影响目标数组的值；
+    * 其实这种结果通过上面代码与String类型特性是可以预见的，在上面1的代码中当<font color = 'red'>源数组中第一个元素的地址值发生改变时，目标数组的第一个元素的值并未受到影响</font>,若是String数组，当我们改变源数组中第一个元素值，目标数组中的第一个元素的值必然不会发生改变，<font color ='red'>因为String不可变，改变原数组中第一个元素值必然是改变其引用！</font>
+    * 基本类型的话...在内容中不涉及引用指向问题，<font color ='red'>当改变基本类型中元素的值相当于直接改变地址值</font>！所以修改源数组的值不会影响目标数组的值！
+
+---
+
+### 7.5 日期与时间类
+
+> 1. 该节仅涉及`java8`之前的日期与时间处理类
+>
+> 2. 关于日期和时间，有一些基本概念，包括时区、时刻、纪元时、年历等
+>
+>     * 时区：同一时刻，世界上各个地区的时间可能是不一样的，具体时间与时区有关。全球一共有24个时区，英国格林尼治是0时区，北京是东八区，也就是说格林尼治凌晨1点，北京是早上9点。0时区的时间也称为GMT+0时间，GMT是格林尼治标准时间，北京的时间就是GMT+8:0
+>     * 时刻：所有计算机系统内部都用一个整数表示时刻，这个整数是距离格林尼治标准时间1970年1月1日0时0分0秒的毫秒数。为什么要用这个时间呢？更多的是历史原因，本书就不介绍了。
+>     * 纪元时：格林尼治标准时间1970年1月1日0时0分0秒也被称为Epoch Time（纪元时）。
+>     * 年历：Java API的设计思想是支持国际化的，支持多种年历，但没有直接支持中国的农历，本书主要讨论公历。
+>
+>     时刻是一个绝对时间，对时刻的解读，则是相对的，与年历和时区相关。
+
+#### 7.5.1 相关`API`
+
+> * `Date`：表示时刻，即绝对时间，与年月日无关。
+> * `Calendar`：表示年历，`Calendar`是一个抽象类，其中表示公历的子类是`Gregorian-Calendar`。
+> * `DateFormat`：表示格式化，能够将日期和时间与字符串进行相互转换，`DateFormat`也是一个抽象类，其中最常用的子类是`SimpleDateFormat`。
+> * `TimeZone`：表示时区。
+> * `Locale`：表示国家（或地区）和语言
+
+##### 1. Date
+
+> Date是Java API中最早引入的关于日期的类，一开始，Date也承载了关于年历的角色，但由于不能支持国际化，其中的很多方法都已经过时了，被标记为了@Deprecated，不再建议使用
+
+###### 1.1 Date的成员变量
+
+`Date`表示时刻，内部主要是一个`long`类型的值，如下所示：
+
+```java
+private transient long fastTime;
+```
+
+`fastTime`表示<font color ='red'>距离纪元时的毫秒数。</font>
+
+###### 1.2 Date的构造方法
+
+`Date`现有两个未过时的构造方法，如下所示
+
+```java
+public static void main(String[] args) {
+        //初始Date，未过时的方法
+        Date initDate = new Date();
+        Date initDateWithParam = new Date(1000);
+    }
+
+public Date() {
+        this(System.currentTimeMillis());//当前时间距离纪元时的毫秒数
+    }
+
+public Date(long date) {
+        fastTime = date;
+    }
+```
+
+从上面代码可以看出，`Date`构造函数均是对成员变量`fastTime`毫秒数的操作。无参构造会给成员变量`fastTime`传递一个`System.currentTimeMillis()`的毫米数；
+
+###### 1.3 Date中的方法
+
+`Date`中的其他未过时的方法
+
+```java
+public long getTime() ;
+public boolean equals(Object obj) ;
+public int compareTo(Date anotherDate);
+public boolean before(Date when);
+public boolean after(Date when);
+```
+
+`getTime:`返回`date`对应的毫秒数
+
+`equals:`比较两个`date`对象内部成员变量`fastTime`是否相同
+
+`compareTo:`比较两个`date`对象的`fastTime`，若当前`date`小于参数中的`anotherDate`,则返回-1，若相同则返回0，若大于则返回1；
+
+`before:`判断当前`date`是否在给定日期`when`之前；
+
+`after:`判断当前`date`是否在给定日期`when`之后；
+
+
+
+###### 【Note】：
+
+`Date`是关于时刻操作，它所有的方法都是围绕毫秒值`fastTime`进行操作；
+
+##### 2. Calendar
+
+> `Calendar`类是日期和时间操作中的主要类
+
+###### 2.1 Calendar内部成员变量
+
+`Calendar`内部也有一个表示时刻的毫秒数，定义为：
+
+```java
+ protected 	long   time;
+```
+
+
+
+Calendar内部还有一个数组，表示日历中各个字段的值，定义为：
+
+```java
+protected int  fields[];
+```
+
+<font color ='red'>这个数组的长度为17，保存一个日期中各个字段的值，都有哪些字段呢？Calendar类中定义了一些静态变量，表示这些字段，主要有：</font>
+
+> ❑ Calendar.YEAR：表示年。
+>
+> ❑ Calendar.MONTH：表示月，1月是0, Calendar同样定义了表示各个月份的静态变量，如Calendar.JULY表示7月。
+>
+> ❑ Calendar.DAY_OF_MONTH：表示日，每月的第一天是1。
+>
+> ❑ Calendar.HOUR_OF_DAY：表示小时，为0～23。
+>
+> ❑ Calendar.MINUTE：表示分钟，为0～59。
+>
+> ❑ Calendar.SECOND：表示秒，为0～59。
+>
+> ❑ Calendar.MILLISECOND：表示毫秒，为0～999。
+>
+> ❑ Calendar.DAY_OF_WEEK：表示星期几，周日是1，周一是2，周六是7,Calenar同样定义了表示各个星期的静态变量，如Calendar.SUNDAY表示周日。
+
+以上是`Calendar常量`，这些常量值作为数组`fields[]`下标得到的值与常量名的含义相同，例如：`fields[Calendar.YEAR]`得到的是年份值；实际用法我将在后续代码案例中使用，接下来我们先来看`Calendar`如何创建对象
+
+---
+
+###### 2.2 Calendar对象的获取
+
+`Calendar`对象是通过静态方法获取的，代码如下：
+
+```java
+public static Calendar getInstance();
+```
+
+当然在获取`Calendar`对象时还可以指定时区，国家等参数，此处不做说明；
+
+###### 【Note】：工厂方法
+
+> getInstance方法封装了Calendar对象创建的细节。TimeZone和Locale不同，具体的子类可能不同，但都是Calendar。这种隐藏对象创建细节的方式，是计算机程序中一种常见的设计模式，它有一个名字，叫工厂方法，getInstance就是一个工厂方法，它生产对象。
+
+通过`Calendar.getInstance()`获取的`Calendar`对象也表示当前时间，但该对象可以很方便的获取`年月日时分秒，每月第一天`等有含义的日期值,下面来实践这部分代码
+
+```java
+public static void main(String[] args) {
+        //获取Calendar对象
+        Calendar calendar = Calendar.getInstance();//获取当前时间的Calendar对象
+        //获取年
+        System.out.println(calendar.get(Calendar.YEAR));
+        //获取月
+        System.out.println(calendar.get(Calendar.MONTH));//Month从0到11  8
+        //获取日
+        System.out.println(calendar.get(Calendar.DAY_OF_MONTH));
+        System.out.println(calendar.get(Calendar.DAY_OF_YEAR));
+        //获取时
+        System.out.println(calendar.get(Calendar.HOUR));//12小时制
+        System.out.println(calendar.get(Calendar.HOUR_OF_DAY));//24小时制
+        //获取分
+        System.out.println(calendar.get(Calendar.MINUTE));
+        //获取秒
+        System.out.println(calendar.get(Calendar.SECOND));
+    }
+```
+
+###### 【Note】：实现原理
+
+> 将成员变量`time`表示的毫秒数，按照时区，国家对应的年历计算初始化`fields[16]`数组中各个下标的值，通过`Calendar.get`方法获取`fields`数组中对应字段的值
+
+###### 2.3 定制Calendar对象(time)
+
+操作`Calendar.time`大致有三种方法如下：
+
+```java
+//通过date对象给time赋值
+public final void setTime(Date date);
+//直接传参给time赋值
+public void setTimeInMillis(long millis);
+//设置年月日进行
+public void set(int field, int value);
+public final void set(int year, int month, int date);
+public final void set(int year, int month, int date, int hourOfDay, int minute);
+public final void set(int year, int month, int date, int hourOfDay, int minute,int second);
+```
+
+
+
+###### 【Note】：set方法定制
+
+当使用set方法设置年月日等，通过`Calendar`对象调用`get(Calendar.YEAR)`获取的是设置的月份值，而不是月份值-1；示例代码如下
+
+```java
+public static void main(String[] args) {
+        //获取Calendar对象
+        Calendar calendar = Calendar.getInstance();//获取当前时间的Calendar对象
+
+        //定制Calendar
+//        calendar.setTime(new Date());
+//        calendar.setTimeInMillis(1000);
+        calendar.set(2021,9,12);
+        //获取年
+        System.out.println(calendar.get(Calendar.YEAR));
+        //获取月份
+        System.out.println(calendar.get(Calendar.MONTH));//得到的结果是9而不是8。
+        //获取日
+        System.out.println(calendar.get(Calendar.DAY_OF_MONTH));
+        System.out.println(calendar.get(Calendar.DAY_OF_YEAR));
+        //获取时
+        System.out.println(calendar.get(Calendar.HOUR));//12小时制
+        System.out.println(calendar.get(Calendar.HOUR_OF_DAY));//24小时制
+        //获取分
+        System.out.println(calendar.get(Calendar.MINUTE));
+        //获取秒
+        System.out.println(calendar.get(Calendar.SECOND));
+
+    }
+```
+
+
+
+除了直接定制，`Calendar`还提供了方法`add(field,int amound)`支持根据字段<font color ='red'>动态的减少和增加</font>
+
+```java
+public void add(int field, int amount);
+```
+
+`field`的取值范围对应`filed[]`的下标，`amount`为正数表示增加，负数表示减少。示例代码如下
+
+```java
+public static void main(String[] args) {
+        //获取Calendar对象
+        Calendar calendar = Calendar.getInstance();//获取当前时间的Calendar对象
+        //定制Calendar
+        calendar.set(2021,9,12);
+        //通过add方法将年份+1，月份-2
+        calendar.add(Calendar.YEAR,1);
+        calendar.add(Calendar.MONTH,-1);
+        calendar.add(Calendar.DAY_OF_MONTH,-12);
+        //获取年
+        System.out.println(calendar.get(Calendar.YEAR));//2022
+        //获取月
+        System.out.println(calendar.get(Calendar.MONTH));//7
+        //获取日
+        System.out.println(calendar.get(Calendar.DAY_OF_MONTH));//31
+
+
+    }
+```
+
+上面代码中`day`减少12，`month`随之再减少了1最终月份由9变成了7，这就是动态的含义
+
+
+
+
+
+`Calendar`还有一个类似的方法`roll()`可以改变`field`的值，但是<font color ='red'>不会动态的增加和减少</font>
+
+```java
+public void roll(int field, int amount);
+```
+
+```java
+public static void main(String[] args) {
+        //获取Calendar对象
+        Calendar calendar = Calendar.getInstance();//获取当前时间的Calendar对象
+        //定制Calendar
+        calendar.set(2021,9,12);
+        //通过add方法将年份+1，月份-2
+        calendar.add(Calendar.YEAR,1);
+        //roll方法
+        calendar.roll(Calendar.DAY_OF_MONTH,-12);
+        //获取年
+        System.out.println(calendar.get(Calendar.YEAR));//2022
+        //获取月
+        System.out.println(calendar.get(Calendar.MONTH));//9
+        //获取日
+        System.out.println(calendar.get(Calendar.DAY_OF_MONTH));//31
+
+
+    }
+```
+
+上面代码中`day`减少12，变为月份的最后一天31日，`month`并未随之减少还是9；
+
+##### 3. DateFormat
+
+##### 4. SimpleDateFormat
 
