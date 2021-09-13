@@ -3236,6 +3236,10 @@ public static void main(String[] args) {
 ```java
 //通过date对象给time赋值
 public final void setTime(Date date);
+//获取Date
+public final Date getTime();
+
+
 //直接传参给time赋值
 public void setTimeInMillis(long millis);
 //设置年月日进行
@@ -3274,6 +3278,8 @@ public static void main(String[] args) {
         System.out.println(calendar.get(Calendar.MINUTE));
         //获取秒
         System.out.println(calendar.get(Calendar.SECOND));
+  
+  			Date date = calendar.getTime();//Calendar与Date之间的转换
 
     }
 ```
@@ -3344,7 +3350,40 @@ public static void main(String[] args) {
 
 上面代码中`day`减少12，变为月份的最后一天31日，`month`并未随之减少还是9；
 
-##### 3. DateFormat
+##### 3. `DateFormat`
 
-##### 4. SimpleDateFormat
+调用这个类通常用作：Date与日期格式的字符串之间的转换，它有两个主要方法`parse()`,`format()`,`parse`将日期格式的字符串转为`Date`类型，`format`将`Date`类型转为指定日期格式的字符串；
+
+```java
+//DateFormat类
+DateFormat dateFormat = DateFormat.getDateInstance();
+
+String fDate = dateFormat.format(new Date());
+System.out.println(fDate);
+Date pDate = dateFormat.parse("2021-09-12");//必须是固定格式'yyyy-MM-dd'
+System.out.println(pDate);
+```
+
+
+
+##### 4. `SimpleDateFormat`
+
+> SimpleDateFormat是DateFormat的子类，相比DateFormat，它的一个主要不同是，它可以接受一个自定义的模式（pattern）作为参数，这个模式规定了Date的字符串形式
+
+`SimpleDateFormat`的构造函数可以指定日期格式，其中`yyyy`代表年，`MM`代表月，`dd`代表日，`HH`大小代表24小时，`hh`小写表示12小时，`mm`分钟，`ss`
+
+```java
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月-dd,HH:mm,ss");
+Calendar instance = Calendar.getInstance();
+instance.set(2000,9,12,16,20,11);
+String formatDate = sdf.format(instance.getTime());
+System.out.println(formatDate);//2000年10月-12,16:20,11
+```
+
+###### 【Note】
+
+> 1. 注意`Calendar`对象与`Date`之间的两个方法，`void obj_calendar.setTme(Date)`,`Date obj_calendar.getTime()`
+> 2. DateFormat/SimpleDateFormat不是线程安全的。关于线程概念，第15章会详细介绍，这里简单说明一下。多个线程同时使用一个DateFormat实例的时候，会有问题
+> 3. Calendar难以进行比较复杂的日期操作，比如，计算两个日期之间有多少个月，根据生日计算年龄，计算下个月的第一个周一等
+> 4. ![image-20210913232753846](assets/image-20210913232753846.png)
 
