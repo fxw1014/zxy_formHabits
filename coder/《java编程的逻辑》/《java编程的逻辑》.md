@@ -3399,5 +3399,120 @@ System.out.println(formatDate);//2000年10月-12,16:20,11
 > 1. 注意`Calendar`对象与`Date`之间的两个方法，`void obj_calendar.setTme(Date)`,`Date obj_calendar.getTime()`
 > 2. DateFormat/SimpleDateFormat不是线程安全的。关于线程概念，第15章会详细介绍，这里简单说明一下。多个线程同时使用一个DateFormat实例的时候，会有问题
 > 3. Calendar难以进行比较复杂的日期操作，比如，计算两个日期之间有多少个月，根据生日计算年龄，计算下个月的第一个周一等
-> 4. ![image-20210913232753846](assets/image-20210913232753846.png)
+> 4. <img src="assets/image-20210913232753846.png" alt="image-20210913232753846" style="zoom:50%;" />
 
+## 8. 泛型
+
+> * 8.1节主要介绍泛型的基本概念和原理；
+> * 8.2节重点介绍令人费解的通配符；
+> * 8.3节介绍一些细节和泛型的局限性。
+
+### BG
+
+> <font color ='red'>泛型将接口的概念进一步延伸</font>，“泛型”的字面意思就是广泛的类型。类、接口和方法代码可以应用于非常广泛的类型，<font color ='red'>代码与它们能够操作的数据类型不再绑定在一起，同一套代码可以用于多种数据类型，这样，不仅可以复用代码，降低耦合，而且可以提高代码的可读性和安全性。</font>
+
+### 8.1 基本使用和原理
+
+#### 8.1.1 泛型类
+
+下面是一个简单的泛型类代码。
+
+```java
+public class GenericTest <T>{
+    private T fieldT1;
+    private T fieldT2;
+
+    public GenericTest(T fieldT1, T fieldT2) {
+        this.fieldT1 = fieldT1;
+        this.fieldT2 = fieldT2;
+    }
+
+    public T getFieldT1() {
+        return fieldT1;
+    }
+
+    public void setFieldT1(T fieldT1) {
+        this.fieldT1 = fieldT1;
+    }
+
+    public T getFieldT2() {
+        return fieldT2;
+    }
+
+    public void setFieldT2(T fieldT2) {
+        this.fieldT2 = fieldT2;
+    }
+    //primitive
+    public static void main(String[] args) {
+        GenericTest<String> gt = new GenericTest<String>("field1","field2");
+        System.out.println(gt.fieldT1);
+        System.out.println(gt.fieldT2);
+
+    }
+}
+```
+
+以上代码的泛型代码是单一的类型，还可以是多类型，代码如下
+
+```java
+public class GenericTest <T,E>{
+    private T fieldT1;
+    private E fieldT2;
+
+    public GenericTest(T fieldT1, E fieldT2) {
+        this.fieldT1 = fieldT1;
+        this.fieldT2 = fieldT2;
+    }
+
+    public T getFieldT1() {
+        return fieldT1;
+    }
+
+    public void setFieldT1(T fieldT1) {
+        this.fieldT1 = fieldT1;
+    }
+
+    public E getFieldT2() {
+        return fieldT2;
+    }
+
+    public void setFieldT2(E fieldT2) {
+        this.fieldT2 = fieldT2;
+    }
+    //primitive
+    public static void main(String[] args) {
+        GenericTest<String,Integer> gt = new GenericTest<String,Integer>("field1",1);
+        System.out.println(gt.fieldT1);
+        System.out.println(gt.fieldT2);
+
+    }
+}
+```
+
+以上代码的泛型类型是多类型的；
+
+###### 【Note】:省略泛型类型
+
+> `java7`之后泛型的类型可以省略，上面创建泛型类的代码就可以改成如下的样子
+>
+> ```java
+> GenericTest<String,Integer> gt = new GenericTest<>("field1",1);
+> ```
+>
+> 
+
+#### 8.1.2 泛型的原理
+
+> java有Java编译器和Java虚拟机，编译器将Java源代码转换为．class文件，虚拟机加载并运行．class文件。对于泛型类，Java编译器会将泛型代码转换为普通的非泛型代码，就像上面的普通Pair类代码及其使用代码一样，将类型参数T擦除，替换为Object，插入必要的强制类型转换。Java虚拟机实际执行的时候，它是不知道泛型这回事的，只知道普通的类及代码。
+
+上一小节中我们使用了泛型的方式创建对象，可以随意指定实例变量的类型，但我们将实例变量声明成`Object`类型，也同样在创建对象时随意指定实例变量类型，那使用泛型还有什么意义？
+
+事实上，若我们用`Object`实现泛型类的作用会发现如下两点不同：
+
+1. 需要强制类型转换，`Object`转其他
+
+2. `Object`转其他类型又可以能会出现类型转换错误的异常(泛型的好处之一：预编译)
+
+    <img src="assets/image-20210915235323832.png" alt="image-20210915235323832" style="zoom:50%;" />
+
+    以上图片中代码在运行时会出现类型转换异常，但使用泛型并不会报这个错！
