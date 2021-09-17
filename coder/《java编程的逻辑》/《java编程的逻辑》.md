@@ -3539,7 +3539,33 @@ public class GenericTest <T,E>{
 
 下面我们简单实现一个`动态数组`，即对这个类的使用者而言好像就是一个不限长度的数组；
 
-1. 内部数组，定义初始长度，内部数组的位置的使用个数；
-2. 对这个数组的扩容阈值及扩容
-3. 增，删，改，查
+```java
+public class DynamicArray<T> {
+    //实例变量
+    //Object内部数组
+    private Object[] elementDate;
+    //内部实际使用的数量
+    private int size;
+    //数组初始化值
+    private static final int INILIAL_SIZE = 10;
+
+    //无参构造方法，初始化内部数组
+    public DynamicArray(){
+        elementDate = new Object[INILIAL_SIZE];
+    }
+    //扩容方法
+    //查 get,contain
+    public T get(int index){
+        if(size == 0) return null;
+        if(size <= index)  throw new ArrayIndexOutOfBoundsException("索引值过大");
+        return (T)elementDate[index];
+    }
+
+    //增
+    //删
+    //改
+}
+```
+
+
 
