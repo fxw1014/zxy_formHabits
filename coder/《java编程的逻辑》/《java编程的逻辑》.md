@@ -3569,3 +3569,80 @@ public class DynamicArray<T> {
 
 
 
+`todo.........`
+
+## 9. 列表和队列
+
+> * 从本章开始，我们探讨Java中的容器类。所谓容器，顾名思义就是容纳其他数据的。计算机课程中有一门课叫数据结构，可以粗略对应于Java中的容器类
+> * 在本章中，我们先介绍关于列表和队列的一些主要类，具体包括`ArrayList`、`LinkedList`以及`ArrayDeque`，我们会介绍它们的用法、背后的实现原理、数据结构和算法，以及应用场景等
+
+### 9.1 剖析`ArrayList`
+
+#### 9.1.1 基本用法
+
+下面展示`ArrayList`的常用方法:
+
+```java
+public class ArrayListTest {
+    public static void main(String[] args) {
+        List<String> list = new ArrayList<>();
+        System.out.println("isEmpty: "+list.isEmpty());
+
+        //增，
+        list.add("fan");
+        list.add("xiu");
+        list.add("wei");
+        System.out.println("isEmpty: " + list.isEmpty());
+        // 查，
+        System.out.println(list.get(0));
+        System.out.println(list.contains("fan"));
+        System.out.println(list.indexOf("xiu"));
+        System.out.println(list.lastIndexOf("wei"));
+
+        // 改，
+        list.set(1,"hehe");
+        // 删
+        list.remove("fan");
+        list.remove(0);
+        //获取长度
+        list.clear();
+        System.out.println("isEmpty: " + list.isEmpty());
+
+    }
+
+
+}
+```
+
+#### 9.1.2 基本原理
+
+##### a) 实例变量（属性）
+
+```java
+transient Object[] elementData;
+private int size;
+
+private static final int DEFAULT_CAPACITY = 10;
+```
+
+`ArrayList`中比较重要的属性有两个，与`StringBuilder`类似，类的属性中都有一个内部数组，并且还有一个`int`型的变量表示内部数组中实际元素的个数，但`ArrayList`与`StringBuilder`内部属性所不同的是`ArrayList`是一个`Object`数组，`StringBuilder`是一个`char`数组。当然变量的修饰符也不同；
+
+另外`ArrayList`中有个常量`DEFAULT_CAPACITY`代表数组的默认初始化长度，即当我们创建`ArrayList`无参对象时,默认创建的是`elementDate.length = 10`的数组；
+
+##### b) 方法的实现原理
+
+```java
+add
+```
+
+1. 判断数组长度是否够用，否则<font color ='red'>扩容</font> 1.5?
+2. 根据size，将新增的元素添加到`elementDate[]`空余的第一个元素中
+
+
+
+
+
+
+
+
+
