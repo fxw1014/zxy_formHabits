@@ -3632,11 +3632,52 @@ private static final int DEFAULT_CAPACITY = 10;
 ##### b) 方法的实现原理
 
 ```java
-add
+public boolean add(E e) {
+  			//判断现element数组长度是否支持再多增加一个元素，若不支持增加则进行扩容
+        ensureCapacityInternal(size + 1);  // Increments modCount!!
+        elementData[size++] = e;
+        return true;
+    }
+
+
+private void ensureCapacityInternal(int minCapacity) {
+        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+    }
+
+//如果ArrayList初始化未指定容量，则返回10，否则返回size + 1
+private static int calculateCapacity(Object[] elementData, int minCapacity) {
+  			//如果elementData数组是空数组(PS:创建Arraylist对象时，不指定容量会创建空数组 DEFAULTCAPACITY_EMPTY_ELEMENTDATA)
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+          	//取DEFAULT_CAPACITY(10)与size+1之间的最大值
+            return Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+        return minCapacity;
+    }
+
+private void ensureExplicitCapacity(int minCapacity) {
+        modCount++;
+
+        // 若新增元素后的长度>elementData数组的长度，则扩容
+        if (minCapacity - elementData.length > 0)
+            grow(minCapacity);
+    }
+
+//1.5倍扩容，
+private void grow(int minCapacity) {
+        // overflow-conscious code
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);//源数组长度值length + 源数组长度值算数右移 ==length * 1.5
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        // minCapacity is usually close to size, so this is a win:
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
 ```
 
-1. 判断数组长度是否够用，否则<font color ='red'>扩容</font> 1.5?
-2. 根据size，将新增的元素添加到`elementDate[]`空余的第一个元素中
+* 如果elementData数组是空数组(PS:创建Arraylist对象时，不指定容量会创建空数组 DEFAULTCAPACITY_EMPTY_ELEMENTDATA)
+* 1.5倍扩容
 
 
 
