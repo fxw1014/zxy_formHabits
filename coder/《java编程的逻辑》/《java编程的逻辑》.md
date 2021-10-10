@@ -3593,6 +3593,7 @@ public class ArrayListTest {
         list.add("xiu");
         list.add("wei");
         System.out.println("isEmpty: " + list.isEmpty());
+      
         // 查，
         System.out.println(list.get(0));
         System.out.println(list.contains("fan"));
@@ -3601,6 +3602,7 @@ public class ArrayListTest {
 
         // 改，
         list.set(1,"hehe");
+      
         // 删
         list.remove("fan");
         list.remove(0);
@@ -3680,6 +3682,392 @@ private void grow(int minCapacity) {
 * 1.5倍扩容
 
 
+
+---
+
+#### 9.1.3 迭代
+
+`foreach`遍历`ArrayList`数组,如下代码所示：
+
+```java
+public static void main(String[] args) {
+        List<String> list = new ArrayList<>();
+        list.add("z");
+        list.add("x");
+        list.add("y");
+        //foreach遍历list 迭代
+        for (String s : list) {
+            System.out.println(s);
+        }
+    }
+```
+
+##### a) 原理
+
+`foreach`是如何实现的，实际上编译器会将它转换成如下代码，进行迭代遍历
+
+```java
+public static void main(String[] args) {
+        List<String> list = new ArrayList<>();
+        list.add("z");
+        list.add("x");
+        list.add("y");
+
+        Iterator<String> iterator = list.iterator();
+        //判断下一个元素是否有值
+        while (iterator.hasNext()){
+            //得到下一个元素的值
+            System.out.println(iterator.next());
+        }
+    }
+```
+
+`foreach`的底层就是上面的`iterator`迭代遍历，实际上`ArrayList`实现了`Iterable`接口，`Iterable`翻译过来是可迭代的意思，下图是ArrayList的继承、实现图
+
+<img src="assets/image-20211009212237832.png" alt="image-20211009212237832" style="zoom:50%;" />
+
+从上图中我们可以看出ArrayList继承自AbstractList实现List接口实现Collection接口实现Iterable接口，Iterable的接口如下代码所示：
+
+```java
+public interface Iterable<T> {
+  //通过该方法，返回一个迭代器对象Iterator
+	Iterator<T> iterator();
+}
+
+public interface Iterator<E> {
+  //迭代中的是否有元素
+	boolean hasNext();
+  //返回迭代中的下一个元素
+	E next();
+  //删除最后返回的元素
+  default void remove() {}
+}
+```
+
+上面代码中`Iterable`接口中的Iterator()方法会返回一个迭代器对象`Iterator`,而`Iterator`是一个接口其中定义了几个迭代的规范或者说功能；
+
+只要对象实现了`Iterable`接口，就可以使用`foreach`语法，编译器会转换为调用`Iterable`和`Iterator`接口的方法；示例代码如下：
+
+```java
+static class InnerTest implements Iterable{
+
+        @Override
+        public Iterator iterator() {
+            return null;
+        }
+
+        public static void main(String[] args) {
+            Test test = new Test();
+            for (Object o : test) {
+
+            }
+        }
+    }
+
+```
+
+上面的代码中，我用一个内部类`InnerTest`实现了`Iterable`接口并重写了iterator()方法，然后在main方法中创建`InnerTest`对象，这时`InnerTest`对象便可以使用`foreach`进行遍历
+
+
+
+
+> 除了iterator(), ArrayList还提供了两个返回Iterator接口的方法
+>
+> ```java
+> public ListIterator<E> listIterator(int index) {
+>      if (index < 0 || index > size)
+>          throw new IndexOutOfBoundsException("Index: "+index);
+>      return new ListItr(index);
+>  }
+> 
+> public ListIterator<E> listIterator() {
+>      return new ListItr(0);
+>  }
+> 
+> 
+> ```
+>
+> 
+
+##### b) 迭代器的陷阱
+
+> 关于迭代器，有一种常见的误用，就是在迭代的中间（使用foreach）<font color ='red'>调用容器的删除、新增方法（只要是改变容器中元素的个数）</font>，例如在如下代码中：	
+
+```java
+/*
+    创建内部类
+    1. 无实例变量，实例方法
+    2. 创建类方法main，在main中创建ArrayList对象，内部存储Integer对象
+    3. 向容器中添加元素
+    4. 通过foreach遍历元素，并在遍历的过程中筛选元素，将小于5的元素删除
+     */
+
+    static class IteratorTest {
+        public static void main(String[] args) {
+            List<Integer> list = new ArrayList<>();
+            list.add(1);
+            list.add(4);
+            list.add(5);
+            for (Integer elem : list) {
+                if(elem < 5){
+                   list.remove(elem);//Exception in thread "main" java.util.ConcurrentModificationException
+                }
+            }
+        }
+    }
+```
+
+上面代码中通过`foreach`循环list，然后通过list.remove（）方法删除容器中元素值小于5的元素，<font color ="red">当容器中存在值小于5的元素，即存在可以删除的元素时，会抛出异常ConcurrentModificationException（并发修改异常）</font>
+
+> 为什么呢？因为迭代器内部会维护一些索引位置相关的数据，`要求在迭代过程中，容器不能发生结构性变化`，否则这些索引位置就失效了。`所谓结构性变化就是添加、插入和删除元素`，只是修改元素内容不算结构性变化
+
+
+
+那假如我们就是有在遍历过程中删除指定元素的需求我们要如何处理呢？有两种方法处理，代码如下
+
+```java
+/**
+             * 1. 使用迭代器遍历
+             *  a) 通过list，获取迭代器对象进行迭代遍历
+             *  b) 在迭代的过程中通过迭代器的remove方法将小于5的元素删除
+             */
+            Iterator<Integer> itr = list.iterator();
+            while (itr.hasNext()) {
+                if(itr.next() < 5){
+                   itr.remove();
+                }
+            }
+            System.out.println(list.size());
+            System.out.println(list);
+
+
+
+/**
+             * 2. 使用fori遍历
+             *  a) 正常的遍历删除
+             */
+            for (int i = 0; i < list.size(); i++) {
+                if(list.get(i) < 5){
+                    list.remove(i);
+                    i--;//若不加该行代码，删除时size的长度会动态变化，若删除0位置的元素，则1位置的元素就会作为新的0位置元素，但是索引i的值未发生变化，导致1位置的元素未被筛查
+                }
+            }
+            System.out.println(list.size());
+            System.out.println(list);
+```
+
+在上面的代码中，方法一使用了<font color = 'red'>迭代器遍历删除，中途不需要加入什么特殊处理</font>,但是方法二使用的<font color = "red">`fori`遍历就需要特殊处理，需要根据是否有元素删除来调整索引i的值</font>，具体原因如上面的注释
+
+---
+
+##### c) 迭代器实现的原理
+
+> 从上面实践中我们知道，foreach遍历时使用list的remove方法删除元素时会抛出异常，这是由于容器发了结构性变化导致的，但是<font color = "red">迭代器如何知道发生了结构性变化呢？它的remove方法为什么又可以删除呢？下面让我来分析迭代器的实现原理</font>
+
+下面我们来看`ArrayList`中的`iterator`方法的实现，代码如下：
+
+```java
+		public Iterator<E> iterator() {
+        return new Itr();//返回一个Itr对象
+    }
+
+    private class Itr implements Iterator<E> {
+
+    int cursor;       // index of next element to return
+    int lastRet = -1; // index of last element returned; -1 if no such
+    int expectedModCount = modCount;
+
+    public boolean hasNext() {
+      return cursor != size;
+    }
+
+    public E next() {
+      //校验 S
+      checkForComodification();//检查是否发生结构性变化
+      int i = cursor;
+      if (i >= size)
+        throw new NoSuchElementException();
+      Object[] elementData = ArrayList.this.elementData;
+      if (i >= elementData.length)
+        throw new ConcurrentModificationException();
+      //校验 E
+      cursor = i + 1;
+      return (E) elementData[lastRet = i];
+    }
+      
+    //检查是否发生结构性变化
+    final void checkForComodification() {
+      //modCount来自于ArbstractList的实例变量,而ArrayList实现了ArbstractList,当通过list方法向容器中添加、删除元素时modCount会发生变化，但是expectedModCount没变！
+      if (modCount != expectedModCount)
+        throw new ConcurrentModificationException();
+    }
+    
+    public void remove() {
+      if (lastRet < 0)//该判断条件决定，再删除元素时必须先调用next()方法使初始化的lastRet!=-1,否则会报IllegalStateException
+        throw new IllegalStateException();
+      checkForComodification();
+
+      try {
+        ArrayList.this.remove(lastRet);//调用list的remove方法，删除元素，然后调整索引
+        cursor = lastRet;//调整索引，因为在elementData数组删除的元素会前移
+        lastRet = -1;
+        expectedModCount = modCount;
+      } catch (IndexOutOfBoundsException ex) {
+        throw new ConcurrentModificationException();
+      }
+    }
+
+  
+}
+
+
+```
+
+> 它调用了ArrayList的remove方法，但同时更新了cursor、lastRet和expectedModCount的值，所以它可以正确删除。
+>
+> 不过，需要注意的是，调用remove方法前必须先调用next,原因如上面代码中remove方法的注释。
+
+---
+
+##### d) 迭代器的好处
+
+>为什么要通过迭代器这种方式访问元素呢？直接使用size()/get(index)语法不也可以吗？在一些场景下，确实没有什么差别，两者都可以。不过，foreach语法更为简洁一些，更重要的是，`迭代器语法更为通用，它适用于各种容器类`
+
+由于从容器类Collection的继承图可以看出，Collection接口继承了Iteratable接口，即所有的实现Collection接口的容器类均可以获取迭代器对象进行遍历；下面演示一个具体的例子：
+
+```java
+/**
+         *创建方法Itr()迭代遍历
+         * 返回值：void
+         * 参数：Iterator
+         * 方法体实现：遍历
+         */
+         public void publicItr(Iterator itr){
+             while (itr.hasNext()) {
+                 System.out.println(itr.next());
+             }
+         }
+```
+
+上面code中不需要知道是哪个容器的迭代器对象，即可实现容器元素的遍历打印；
+
+##### 【Note】：
+
+在使用foreach迭代遍历时候要注意，不能操作容器增删数据；若要实现这个操作可以通过迭代器实现；
+
+---
+
+#### 9.1.4 `ArrayList`实现的接口 
+
+<img src="assets/image-20211010133938716.png" alt="image-20211010133938716" style="zoom:50%;" />
+
+
+
+从上图中可以看`ArrayList`实现的接口有：`RandomAccess,Cloneable,Serializable,List,Collection,Iterable`
+
+##### a) Collection
+
+Collection表示一个数据集合，数据间没有位置或顺序的概念
+
+* removeAll()
+
+* containsAll():containsAll表示检查是否包含了参数容器中的所有元素，只有全包含才返回true
+
+* <font color = 'red'>retainAll（）：表示只保留参数容器中的元素，其他元素会进行删除</font>
+
+    
+
+##### b) List
+
+List表示有顺序或位置的数据集合，它扩展了Collection
+
+##### c) RandomAccess
+
+RandomAccess接口的定义如下：
+
+```java
+public interface RandomAccess {
+  
+}
+```
+
+接口中是空实现，这种没有任何代码的接口在Java中被称为标记接口，用于声明类的一种属性。
+
+> 实现了RandomAccess接口的类表示可以随机访问，可随机访问就是具备类似数组那样的特性，数据在内存是连续存放的，根据索引值就可以直接定位到具体的元素，访问效率很高
+>
+> 有没有声明RandomAccess有什么关系呢？主要用于一些通用的算法代码中，它可以根据这个声明而选择效率更高的实现。比如，Collections类中有一个方法binarySearch，在List中进行二分查找，它的实现代码就根据list是否实现了RandomAccess而采用不同的实现机制
+
+该类的使用方式：通过`xxx instanceof RandomAccess`的结果判断类是否实现了RandomAccess接口（是否支持随机访问）来决定接下来的操作；
+
+---
+
+#### 9.1.5 `ArrayList`的其他方法
+
+```java
+Object[] toArray();
+<T> T[] toArray(T[] a);
+```
+
+实现如下：
+
+```java
+public static void main(String[] args) {
+    List<String> list = new ArrayList<>();
+    list.add("fan");
+    list.add("xiuwe");
+    list.add("wei");
+    list.add("z");
+    
+    Object[] objects = list.toArray();
+    String[] strings = new String[5];
+    String[] strs = list.toArray(strings);
+    System.out.println(Arrays.toString(strings));//打印strings字符串：[fan, xiuwe, wei, z, x]
+  String[] strs2 = list.toArray(strings2);     System.out.println(Arrays.toString(strings2));//打印strings2字符串：[null, null, null, null]
+
+	
+}
+```
+
+在上面代码中若`toArray(T[] a)`参数长度不够，小于list的长度，会新生成地址空间(如上：string2)，否则会直接使用参数数组的地址；
+
+
+
+```java
+public static <T> List<T> asList(T... a);
+```
+
+Arrays中有一个静态方法asList可以返回对应的List
+
+这个方法返回的List，它的实现类并不是本节介绍的ArrayList，而是Arrays类的一个内部类，在这个<font color ='red'>内部类的实现中，内部用的数组就是传入的数组，没有拷贝，也不会动态改变大小</font>，所以对数组的修改也会反映到List中，对List调用add、remove方法会抛出异常
+
+```java
+Integer[] integers = {1, 2, 3, 4};
+            List<Integer> rstList = Arrays.asList(integers);
+            System.out.println(rstList);
+            rstList.add(4);//Exception in thread "main" java.lang.UnsupportedOperationException
+            integers[0] = 5;
+            System.out.println(rstList);
+```
+
+#### 9.1.6 【summary】
+
+>作为程序员，就是要理解每种数据结构的特点，根据场合的不同，选择不同的数据结构。
+>
+>对于ArrayList，它的特点是内部采用动态数组实现，这决定了以下几点。
+>
+>1）`可以随机访问，按照索引位置进行访问效率很高，用算法描述中的术语，效率是O(1)，简单说就是可以一步到位。`
+>
+>2）除非数组已排序(二分查找)，否则按照内容查找元素效率比较低，具体是O(N), N为数组内容长度，也就是说，性能与数组长度成正比。
+>
+>3）添加元素的效率还可以，重新分配和复制数组的开销被平摊了，具体来说，添加N个元素的效率为O(N)。
+>
+>4）插入和删除元素的效率比较低，因为需要移动元素，具体为O(N)
+
+
+
+
+
+---
 
 ## 15. 并发基础知识
 
