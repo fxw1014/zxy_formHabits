@@ -4065,6 +4065,229 @@ Integer[] integers = {1, 2, 3, 4};
 
 
 
+---
+
+### 9.2 剖析`linkedList`
+
+#### 【Q1】:LinkedList与ArrayList增、删、查效率对比
+
+- [ ] 待处理
+
+#### 【Q2】:双端队列，单向队列
+
+- [ ] 待处理
+
+#### 9.2.1 用法
+
+##### a) 普通用法
+
+##### b) 特殊用法
+
+---
+
+#### 9.2.2 实现原理
+
+##### a) 内部组成
+
+如何抽象出节点类、链表
+
+* Node URL图
+* `LinkedList` URL图
+
+##### b) 方法实现
+
+增：add方法
+
+查：get方法
+
+删：remove方法
+
+
+
+---
+
+#### 9.2.3 Summary
+
+
+
+---
+
+### 9.3 剖析`ArrayDeque`
+
+> LinkedList实现了队列接口Queue和双端队列接口Deque, Java容器类中还有一个双端队列的实现类ArrayDeque，它是基于数组实现的。我们知道，一般而言，由于需要移动元素，数组的插入和删除效率比较低，但ArrayDeque的效率却非常高，它是怎么实现的呢？
+
+#### 9.3.1 实现原理
+
+##### a) 内部组成
+
+##### b) 循环数组
+
+---
+
+
+
+## 10. Map和Set
+
+> * `ArrayList、LinkedList、ArrayDeque`，它们的一个共同特点是：查找元素的效率都比较低，都需要逐个进行比较，本章介绍各种Map和Set，它们的查找效率要高得多
+>     * 查找指定元素所在的位置
+> * Map和Set都是接口，Java中有多个实现类，主要包括`HashMap、HashSet、TreeMap、TreeSet、LinkedHashMap、LinedHashSet、EnumMap、EnumSet`等，它们都有什么用？有什么不同？是如何实现的？
+
+### 【Q】list相对于Map，set的优势是什么？镜像问题同问
+
+- [ ] 待解决
+
+---
+
+#### 10.1 剖析HashMap
+
+##### 10.1.1 基本概念
+
+`Map`有键和值的概念，一个键对应一个值，键是唯一的，根据键来存、取值；使用`Map`可以方便地处理需要根据键访问对象的场景；比如：
+
+> ❑ 一个词典应用，键可以为单词，值可以为单词信息类，包括含义、发音、例句等；
+>
+> ❑ 统计和记录一本书中所有单词出现的次数，可以以单词为键，以出现次数为值；
+>
+> ❑ 管理配置文件中的配置项，配置项是典型的键值对；
+>
+> ❑ 根据身份证号查询人员信息，身份证号为键，人员信息为值。
+
+数组、`ArrayList、LinkedList`可以视为一种特殊的`Map，键为索引，值为对象
+
+##### 10.1.2 Map接口
+
+a) 内部构成
+
+​	Map接口中没有属性（接口中只有public static final修饰的属性）
+
+b) 常用方法
+
+* 增
+
+    ```java
+    V put(K key, V value);
+    void putAll(Map<? extends K, ? extends V> m);
+    ```
+
+* 查
+
+    ```java
+    V get(Object key);
+    boolean containsKey(Object key);
+    boolean containsValue(Object value);
+    Set<Map.Entry<K, V>> entrySet();
+    Set<K> keySet();
+    Collection<V> values();
+    ```
+
+* 删
+
+    ```java
+    V remove(Object key);
+    ```
+
+* 改
+
+    同增，键相同覆盖值
+
+* 其他
+
+    ```java
+    int size();
+    boolean isEmpty();
+    void clear();
+    ```
+
+`Map中的键是没有重复的，所以ketSet()返回了一个Set`。keySet()、values()、entrySet()有一个共同的特点，它们返回的都是视图，不是复制的值，`基于返回值的修改会直接修改Map自身`,示例代码如下：
+
+```java
+ public static void mapMethod(){
+        Map<String, String> map = new HashMap<>();
+        map.put("name","fan");//{name=fan}
+        System.out.println(map);
+        Set<String> set = map.keySet();
+//        set.add("haha");//java.lang.UnsupportedOperationException
+        set.clear();
+        System.out.println(map);//{}
+
+    }
+```
+
+`调用clear方法删除keyset中的值，会删除map中所有的键值对,同理values()返回的collection对象调用clear()方法也会删除map中所有的键值对，entryset调用clear（）同理`，但是向`keyset`中增加值，会报异常`UnsupportedOperationException`
+
+##### 10.1.3 HashMap
+
+###### JDK1.7
+
+###### a) 内部组成
+
+<img src="assets/image-20211013224713330.png" alt="image-20211013224713330" style="zoom:50%;" />
+
+
+
+`HashMap`的内部组成
+
+* `size`:表示实际键值对的个数。
+* `table`:是一个`Entry`类型的数组，称为哈希表或哈希桶，<font color = 'red'>其中数组中的每个元素指向一个单链表（`Entry.next`）</font>
+
+* `threshold`:表示阈值，当键值对个数size大于等于threshold时考虑进行扩展,threshold等于`table.length乘以loadFactor`
+* `loadFactor`:是负载因子，表示整体上table被占用的程度，是一个浮点数，默认为0.75，可以通过构造方法进行修改。
+
+
+
+`table`的初始值为`EMPTY_TABLE`，是一个空表，具体定义为：
+
+```java
+transient Entry<K,V>[] table = (Entry<K,V>[]) EMPTY_TABLE;
+static final Entry<?,?>[] EMPTY_TABLE = {};
+```
+
+上面的代码中，`EMPTY_TABLE`是一个`final`修饰的空数组！代码中通常用该变量判断table是否添加元素；
+
+
+
+`HashMap`默认初始化大小，具体如下
+
+```java
+static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // 左移4位，2^4
+static final float DEFAULT_LOAD_FACTOR = 0.75f;//默认负载因子
+public HashMap() {
+        this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
+    }
+```
+
+
+
+---
+
+`Entry`的内部组成
+
+* `key`:键
+* `value`:值
+* `next`:单向链表指向的下一个元素
+* `hash`:键的hash值
+
+---
+
+###### b) 方法实现
+
+`put(key,value)`
+
+1. 检查是否第一次添加元素，若是给table分配内存空间，通常不指定参数table.length = 16,threshold = 12
+2. 计算key的hash值
+3. hash值与table.length-1取模运算，得到table表中的位置
+4. 遍历单链表，比较链表中Entry.key有与插入的key的hash值相同，若相同则调用equals方法比较，若还是相同则新value替换value并返回，若链表中无hash值相同的元素，则在链表头部插入元素
+
+###### 【Q】:用while可以代替for循环吗？类似remove(key)中的方法
+
+---
+
+###### JDK1.8 
+
+###### a) 内部组成
+
+###### b) 内部实现
+
 
 
 ---
