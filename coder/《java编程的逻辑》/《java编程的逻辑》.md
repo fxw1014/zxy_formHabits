@@ -4069,19 +4069,46 @@ Integer[] integers = {1, 2, 3, 4};
 
 ### 9.2 剖析`linkedList`
 
-#### 【Q1】:LinkedList与ArrayList增、删、查效率对比
+#### 【Q1】
 
-- [ ] 待处理
+LinkedList与ArrayList增、删、查效率对比
 
-#### 【Q2】:双端队列，单向队列
+- [x] 实际需求中根据索引操作较多的话，使用`ArrayList`比使用`LinkedList`效率高，因为虽然LinkedList对元素，增、删的效率高，但是还需要先找到元素，按照索引操作LinkedList需要遍历链表来查找对应的索引元素（对半查找，根据索引与中间位置的关系，从头/尾进行查找），而数组支持随机访问，虽然可能会设置数组元素的移动，但相对于LinkedList来说效率还是要高的；
+- [x] 实际需求中经常需要遍历容器，且在遍历容器的过程中需要对元素进行增、删操作，这个时候使用`LinkedList`就是更好的选择(省去了查找元素及位置的费时操作无疑LinkedList必选)；
 
-- [ ] 待处理
+#### 【Q2】
+
+双端队列，单向队列
+
+- [ ] 双端队列：节点中有指向前后节点的变量
+
+- [ ] 单向队列：节点中只有指向后一个节点的变量
+
+    <img src="assets/image-20211016110812205.png" alt="image-20211016110812205" style="zoom:50%;" />
 
 #### 9.2.1 用法
 
 ##### a) 普通用法
 
+* 与ArrayList相同
+
+【Notes】:与ArrayList相同，还存在另一个带参构造函数
+
+```java
+public LinkedList(Collection<? extends E> c) {
+        this();
+        addAll(c);
+    }
+
+public LinkedList() {
+    }
+```
+
+
+
 ##### b) 特殊用法
+
+* 关于栈、队列的实现
 
 ---
 
@@ -4089,26 +4116,304 @@ Integer[] integers = {1, 2, 3, 4};
 
 ##### a) 内部组成
 
-如何抽象出节点类、链表
+###### 【Notes】：如何抽象出节点类、链表
 
-* Node URL图
-* `LinkedList` URL图
+###### `LinkedList`的内部属性
+
+<img src="assets/image-20211016112356255.png" alt="image-20211016112356255" style="zoom:50%;" />
+
+###### `Node`节点的内部属性
+
+<img src="assets/image-20211016112415372.png" alt="image-20211016112415372" style="zoom:50%;" />
 
 ##### b) 方法实现
 
 增：add方法
 
-查：get方法
+1. 元素添加到链表尾部
+
+    `LinkedList`的特性，类似于`ArrayList的get(index)` 操作般`丝滑`，效率高
+
+    * 创建新节点`newNode`,`new Node<E>(last,item,null)`
+    * 将last.next指向newNode
+    * last指向newNode
+
+    源码如下
+
+    ```java
+    public boolean add(E e) {
+            linkLast(e);
+            return true;
+        }
+    
+    void linkLast(E e) {
+            final Node<E> l = last;
+            final Node<E> newNode = new Node<>(l, e, null);
+            last = newNode;
+            if (l == null)
+                first = newNode;
+            else
+                l.next = newNode;
+            size++;
+            modCount++;
+        }
+    ```
+
+###### 【Q：为什么JDK源码中使用了final类型的变量？】
+
+2. 将元素插入到指定索引index位置
+
+    由于LinkedList不能按索引访问，所以需要先找到索引处的元素节点
+
+    * 比较index与链表长度中间值mid的关系，遍历链表，得到index索引的位置的元素
+        * 若index < mid 则从头节点first开始向中间mid节遍历寻找index索引处的元素，
+        * 反之则从尾节点last开始向中间mid节点遍历寻找index索引处的节点元素
+    * 将链表插入到该索引处，通过是该索引之后
+
+    ```java
+    public void add(int index, E element) {
+            checkPositionIndex(index);
+    
+            if (index == size)
+                linkLast(element);
+            else
+                linkBefore(element, node(index));
+        }
+    //插入到链表尾部
+    void linkLast(E e) {
+            final Node<E> l = last;
+            final Node<E> newNode = new Node<>(l, e, null);
+            last = newNode;
+            if (l == null)
+                first = newNode;
+            else
+                l.next = newNode;
+            size++;
+            modCount++;
+        }
+    //插入到链表中间/头部
+    void linkBefore(E e, Node<E> succ) {
+            // assert succ != null;
+            final Node<E> pred = succ.prev;
+            final Node<E> newNode = new Node<>(pred, e, succ);
+            succ.prev = newNode;
+            if (pred == null)
+                first = newNode;
+            else
+                pred.next = newNode;
+            size++;
+            modCount++;
+        }
+    ```
+
+    
+
+查：
+
+* `get(index)：E 得到指定索引的元素`
+
+    * 检查索引的合法性
+    * 调用`node(index):E`查询指定索引处的节点`indexElem`
+        1. index与size>>1进行对比，决定使用头节点开始遍历还是从尾节点开始遍历
+        2. for循环遍历，并控制next属性向后指
+    * `indexElem.item`得到元素值
+
+    ```java
+    public E get(int index) {
+            checkElementIndex(index);
+            return node(index).item;
+        }
+    
+    Node<E> node(int index) {
+            // assert isElementIndex(index);
+    
+            if (index < (size >> 1)) {
+                Node<E> x = first;
+                for (int i = 0; i < index; i++)
+                    x = x.next;
+                return x;
+            } else {
+                Node<E> x = last;
+                for (int i = size - 1; i > index; i--)
+                    x = x.prev;
+                return x;
+            }
+        }
+    ```
+
+    
+
+* `indexOf(obj): int方法：得到指定元素的索引`
+
+    * 从头节点first向后遍历，判断与obj相同元素处的索引值
+
+        ```java
+        public int indexOf(Object o) {
+                int index = 0;
+                if (o == null) {
+                    for (Node<E> x = first; x != null; x = x.next) {
+                        if (x.item == null)
+                            return index;
+                        index++;
+                    }
+                } else {
+                    for (Node<E> x = first; x != null; x = x.next) {
+                        if (o.equals(x.item))
+                            return index;
+                        index++;
+                    }
+                }
+                return -1;
+            }
+        ```
+
+        
 
 删：remove方法
 
+* `remove():E`删除头节点
 
+    ```java
+    public E removeFirst() {
+            final Node<E> f = first;
+            if (f == null)
+                throw new NoSuchElementException();
+            return unlinkFirst(f);
+        }
+    
+    private E unlinkFirst(Node<E> f) {
+            // assert f == first && f != null;
+            final E element = f.item;
+            final Node<E> next = f.next;
+            f.item = null;
+            f.next = null; // help GC
+            first = next;
+            if (next == null)
+                last = null;
+            else
+                next.prev = null;
+            size--;
+            modCount++;
+            return element;
+        }
+    
+    
+    
+    ```
+
+    
+
+* `remove(index):E`删除指定索引处的元素
+
+    * 调用`node(index)：Node`得到索引处的节点indexNode
+    * indexNode前后节点协调删除indexNode节点
+
+    ```java
+    public E remove(int index) {
+            checkElementIndex(index);
+            return unlink(node(index));
+        }
+    //找到索引处的节点indexNode
+    Node<E> node(int index) {
+            // assert isElementIndex(index);
+    
+            if (index < (size >> 1)) {
+                Node<E> x = first;
+                for (int i = 0; i < index; i++)
+                    x = x.next;
+                return x;
+            } else {
+                Node<E> x = last;
+                for (int i = size - 1; i > index; i--)
+                    x = x.prev;
+                return x;
+            }
+        }
+    
+    
+    //删除indexNode节点
+    E unlink(Node<E> x) {
+            // assert x != null;
+            final E element = x.item;
+            final Node<E> next = x.next;
+            final Node<E> prev = x.prev;
+    
+            if (prev == null) {
+                first = next;
+            } else {
+                prev.next = next;
+                x.prev = null;
+            }
+    
+            if (next == null) {
+                last = prev;
+            } else {
+                next.prev = prev;
+                x.next = null;
+            }
+    
+            x.item = null;
+            size--;
+            modCount++;
+            return element;
+        }
+    
+    ```
+
+    
+
+* `remove(object):boolean`删除容器中值=object的元素
+
+    * 从头到尾遍历寻找节点curNode.item的值等于object的节点
+    * curNode前后节点协调删除curNode节点
+
+    ```java
+    public boolean remove(Object o) {
+            if (o == null) {
+              //新增obje == null的情况，判断链表中是否有值 == null的情况，若有则删除并返回true
+                for (Node<E> x = first; x != null; x = x.next) {
+                    if (x.item == null) {
+                        unlink(x);
+                        return true;
+                    }
+                }
+            } else {
+                for (Node<E> x = first; x != null; x = x.next) {
+                    if (o.equals(x.item)) {
+                        unlink(x);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    ```
+
+    
+
+##### c) 接口的继承图
+
+<img src="assets/image-20211016111941057.png" alt="image-20211016111941057" style="zoom:50%;" />
+
+主要接口有：
+
+* Iteralble
+* Collection
+* List
+* Queue
+* Deque
 
 ---
 
 #### 9.2.3 Summary
 
+1. 按需分配空间，不需要预先分配很多空间。
+2. 不可以随机访问，按照索引位置访问效率比较低，必须从头或尾顺着链接找，效率为O(N/2)。
+3. 不管列表是否已排序，只要是按照内容查找元素，效率都比较低，必须逐个比较，效率为O(N)。
+4. 在两端添加、删除元素的效率很高，为O(1)
+5. 在中间插入、删除元素，要先定位，效率比较低，为O(N)，但修改本身的效率很高，效率为O(1)。
 
+6.<font color = 'red'> 理解了LinkedList和ArrayList的特点，就能比较容易地进行选择了，如果列表长度未知，添加、删除操作比较多，尤其经常从两端进行操作，而按照索引位置访问相对比较少，则LinkedList是比较理想的选择。</font>
 
 ---
 
@@ -4120,7 +4425,11 @@ Integer[] integers = {1, 2, 3, 4};
 
 ##### a) 内部组成
 
+....
+
 ##### b) 循环数组
+
+....
 
 ---
 
@@ -4219,7 +4528,7 @@ b) 常用方法
 
 ###### JDK1.7
 
-###### a) 内部组成
+a) 内部组成
 
 <img src="assets/image-20211013224713330.png" alt="image-20211013224713330" style="zoom:50%;" />
 
@@ -4269,28 +4578,201 @@ public HashMap() {
 
 ---
 
-###### b) 方法实现
+b) 方法实现
 
 `put(key,value)`
 
 1. 检查是否第一次添加元素，若是给table分配内存空间，通常不指定参数table.length = 16,threshold = 12
 2. 计算key的hash值
-3. hash值与table.length-1取模运算，得到table表中的位置
-4. 遍历单链表，比较链表中Entry.key有与插入的key的hash值相同，若相同则调用equals方法比较，若还是相同则新value替换value并返回，若链表中无hash值相同的元素，则在链表头部插入元素
+3. hash值与table.length-1取模运算，得到table表中的位置`i（单链表的开始位置）`，
+4. 从`i`出发，遍历单链表，比较链表中Entry.key有与插入的key的hash值相同，若相同则调用equals方法比较，若还是相同则新value替换value并返回，若链表中无hash值相同的元素，则在链表头部插入元素`(即向数组i位置插入元素，并将该entry.next指向之前的头结点)`
 
-###### 【Q】:用while可以代替for循环吗？类似remove(key)中的方法
+###### 【Q】:
+
+用while可以代替for循环吗？类似remove(key)中的方法
 
 ---
 
-###### JDK1.8 
+###### JDK1.8 【待完成】
+
+a) 内部组成
+
+...
+
+b) 内部实现
+
+...
+
+
+
+#### 10.2 剖析HashSet
+
+##### 10.2.1 方法及背景
+
+##### 10.2.2 实现原理
+
+###### a) 内部属性
+
+<img src="assets/image-20211016203418067.png" alt="image-20211016203418067" style="zoom:50%;" />
+
+1. 一个`HashMap`类型的变量map，用来存储进来的值，但是`HashMap`有键值，此处值应该如何处理？这里JDK源码的处理方式是使用一个Object类型`PRESENT`的变量作为值
+
+    
+
+###### b) 方法实现原理
+
+均与`HashMap`的操作有关
+
+
+
+---
+
+#### 10.3 排序二叉树
+
+> <font color ='red'>HashMap和HashSet的共同实现机制是哈希表，一个共同的限制是没有顺序</font>，我们提到，它们都有一个能保持顺序的对应类TreeMap和TreeSet，这两个类的共同实现基础是排序二叉树
+
+---
+
+##### 10.3.1 定义
+
+> 对每个节点而言：
+>
+> ❑ 如果左子树不为空，则左子树上的所有节点都小于该节点；
+>
+> ❑ 如果右子树不为空，则右子树上的所有节点都大于该节点。
+
+---
+
+##### 10.3.2 平衡的排序二叉树
+
+###### 10.3.2.1 排序二叉树的缺点：
+
+排序二叉树的形状与插入和删除的顺序密切相关，极端情况下，排序二叉树可能退化为一个链表
+
+* 退化为链表后，排序二叉树的优点就都没有了，即使没有退化为链表，如果排序二叉树高度不平衡，效率也会变得很低
+
+###### 10.3.2.2 定义
+
+有一种高度平衡的定义，即任何节点的左右子树的高度差最多为一。满足这个平衡定义的排序二叉树又被称为AVL树
+
+---
+
+##### 10.3.3 红黑树
+
+###### 10.3.3.1 定义
+
+红黑树是特殊的二叉平衡树，它最大树高与最小树高之差<=2
+
+###### 10.3.3.2 规则
+
+1. 根节点是黑色
+2. 所有结点非黑即红
+3. 所有叶子节点都是黑色，且为空
+4. 每个红色节点下都有两个黑色结点 => 不存在两个连续的红色节点
+5. 任意节点到其子树的根结点的黑高都相同
+    * 黑高：含有黑节点的数量
+
+###### 10.3.3.3 恢复平衡
+
+自平衡的实现是通过节点变色、旋转实现的。
+
+
+
+---
+
+##### 10.3.4 Summary
+
+> 1. 排序二叉树保持了元素的顺序，而且是一种综合效率很高的数据结构，基本的保存、删除、查找的效率都为O(h), `h为树的高度`
+> 2. 在树平衡的情况下，h为`log2(N)`,N为节点数。比如，如果N为1024，则`log2(N)`为10。
+> 3. 基本的排序二叉树不能保证树的平衡，可能退化为一个链表。有很多保持树平衡的算法，AVL树能保证树的高度平衡，但红黑树是实际中使用更为广泛的，<font color = 'red'>虽然红黑树只能保证大致平衡，但降低了维持树平衡需要的开销，整体统计效果更好。</font>
+
+---
+
+#### 10.4 剖析TreeMap
+
+##### 10.4.1 基本用法
+
+###### a) Comparable
+
+###### b) Comparator
+
+##### 10.4.2 实现原理
 
 ###### a) 内部组成
 
-###### b) 内部实现
+`TreeMap的内部属性`
 
+<img src="assets/image-20211016215558237.png" alt="image-20211016215558237" style="zoom:50%;" />
 
+###### b) 方法的实现
+
+...
 
 ---
+
+#### 10.5 剖析TreeSet
+
+几乎同HashSet与HashMap的关系；
+
+---
+
+
+
+#### 10.6 剖析LinkedHashMap
+
+> * LinkedHashMap是HashMap的子类，<font color ='red'>但内部还有一个双向链表维护键值对的顺序，每个键值对既位于哈希表中，也位于这个双向链表中。</font>
+> * LinkedHashMap支持两种顺序：一种是插入顺序；另外一种是访问顺序。
+>     * 插入顺序容易理解，先添加的在前面，后添加的在后面，修改操作不影响顺序
+>     * 。访问顺序是什么意思呢？所谓访问是指get/put操作，对一个键执行get/put操作后，其对应的键值对会移到链表末尾，所以，最末尾的是最近访问的，最开始的最久没被访问的，这种顺序就是访问顺序
+> * 默认情况下，LinkedHashMap是按插入有序的
+
+##### 10.6.1 基本用法
+
+访问有序代码示例
+
+```java
+public class LRUCache<K,V> extends LinkedHashMap<K,V> {
+    private int maxCapcity;
+    public LRUCache(int maxCapcity){
+        super(16,0.75F,true);
+        this.maxCapcity = maxCapcity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry eldest) {
+
+        return size() > maxCapcity;
+    }
+
+
+
+}
+
+class Test{
+    public static void main(String[] args) {
+        LRUCache<String, String> map = new LRUCache<String, String>(3);
+        map.put("a","fan");
+        map.put("b","xiu");
+        map.put("c","wei");
+        map.put("d","ha");
+        System.out.println(map);
+    }
+}
+```
+
+---
+
+##### 10.6.2 实现原理
+
+###### a) 内部组成
+
+<img src="assets/image-20211016230128946.png" alt="image-20211016230128946" style="zoom:50%;" />
+
+###### 【Q】
+
+未理解插入过程以及如何按照插入、访问顺序遍历输出的
+
+###### b) 方法实现
 
 ## 15. 并发基础知识
 
