@@ -3576,7 +3576,7 @@ public class DynamicArray<T> {
 > * 从本章开始，我们探讨Java中的容器类。所谓容器，顾名思义就是容纳其他数据的。计算机课程中有一门课叫数据结构，可以粗略对应于Java中的容器类
 > * 在本章中，我们先介绍关于列表和队列的一些主要类，具体包括`ArrayList`、`LinkedList`以及`ArrayDeque`，我们会介绍它们的用法、背后的实现原理、数据结构和算法，以及应用场景等
 
-### 9.1 剖析`ArrayList`
+###  9.1 剖析`ArrayList`
 
 #### 9.1.1 基本用法
 
@@ -4447,7 +4447,7 @@ public LinkedList() {
 
 ---
 
-#### 10.1 剖析HashMap
+### 10.1 剖析HashMap
 
 ##### 10.1.1 基本概念
 
@@ -4605,7 +4605,7 @@ b) 内部实现
 
 
 
-#### 10.2 剖析HashSet
+### 10.2 剖析HashSet
 
 ##### 10.2.1 方法及背景
 
@@ -4627,7 +4627,7 @@ b) 内部实现
 
 ---
 
-#### 10.3 排序二叉树
+### 10.3 排序二叉树
 
 > <font color ='red'>HashMap和HashSet的共同实现机制是哈希表，一个共同的限制是没有顺序</font>，我们提到，它们都有一个能保持顺序的对应类TreeMap和TreeSet，这两个类的共同实现基础是排序二叉树
 
@@ -4688,7 +4688,7 @@ b) 内部实现
 
 ---
 
-#### 10.4 剖析TreeMap
+### 10.4 剖析TreeMap
 
 ##### 10.4.1 基本用法
 
@@ -4710,7 +4710,7 @@ b) 内部实现
 
 ---
 
-#### 10.5 剖析TreeSet
+### 10.5 剖析TreeSet
 
 几乎同HashSet与HashMap的关系；
 
@@ -4718,7 +4718,7 @@ b) 内部实现
 
 
 
-#### 10.6 剖析LinkedHashMap
+### 10.6 剖析LinkedHashMap
 
 > * LinkedHashMap是HashMap的子类，<font color ='red'>但内部还有一个双向链表维护键值对的顺序，每个键值对既位于哈希表中，也位于这个双向链表中。</font>
 > * LinkedHashMap支持两种顺序：一种是插入顺序；另外一种是访问顺序。
@@ -4773,6 +4773,278 @@ class Test{
 未理解插入过程以及如何按照插入、访问顺序遍历输出的
 
 ###### b) 方法实现
+
+
+
+---
+
+## 11. 堆与优先级队列
+
+> * 这里的堆是一种数据结构，与内存区域和分配无关。
+> * 堆可以非常高效方便地解决很多问题，比如
+>     * 优先级队列
+>     * LinkedList是按添加顺序排列的，但现实中，经常需要按优先级来，每次都应该处理当前队列中优先级最高的
+>     * 求前K个最小的元素，求第K个最大的元素，求第K个最小的元素。求前K个最大的元素
+>     * 求中值元素，中值不是平均值，而是排序后中间那个元素的值
+>     * 基于`初始堆`的堆排序思想
+> * Java容器中有一个类`PriorityQueue`，表示优先级队列，它实现了堆，本章我们会详细介绍。关于如何使用堆高效解决求前K个最大的元素和求中值元素
+
+
+
+---
+
+### 11.1 堆的基本概念与算法
+
+---
+
+#### 11.1.1 基本概念
+
+堆首先是一棵二叉树，但它是<font color ='red'>完全二叉树</font>
+
+* 满二叉树
+    * 满二叉树是指除了最后一层外，每个节点都有两个孩子，而最后一层都是叶子节点，都没有孩子。
+    * 满二叉树一定是完全二叉树
+
+* 完全二叉树
+
+    * 完全二叉树不要求最后一层是满的，但如果不满，则要求所有节点必须集中在最左边，从左到右是连续的，中间不能有空的
+
+* 编号
+
+    * 在完全二叉树中，给每个节点编号，编号从1开始递增，从上到下，从左到右，如下图89编号为1,78编号为2...
+
+* 编号后的特点
+
+    * 给定任意一个节点，可以根据其编号直接快速计算出其父节点和孩子节点编号。如果编号为i，则父节点编号即为i/2，左孩子编号即为2× i，右孩子编号即为2× i+1
+
+        <img src="assets/image-20211017163401526.png" alt="image-20211017163401526" style="zoom:50%;" />
+
+        上图中，右边是初始堆，左边是初始堆从上到下，从左到右在数组中的存储情况，元素78处于编号2，则其父节点为2/1 = 1,为编号1元素89的位置，左孩子节点处于2*2 = 4，编号4的位置，右孩子处于2 * 2+ 1 = 5 ，元素5的位置
+
+    * <font color ='red'>使得逻辑概念上的二叉树可以方便地存储到数组中，数组中的元素索引就对应节点的编号，树中的父子关系通过其索引关系隐含维持，不需要单独保持</font>
+
+* > 这种存储二叉树的方法与之前介绍的TreeMap是不一样的。在TreeMap中，有一个单独的内部类Entry, Entry有三个引用，分别指向父节点、左孩子、右孩子。使用数组存储的优点是节省空间，而且访问效率高。堆逻辑概念上是一棵完全二叉树，而物理存储上使用数组，还有一定的顺序要求。
+
+* <font color ='red'>堆中的顺序</font>
+    * 排序二叉树是完全有序的，每个节点都有确定的前驱和后继，而且不能有重复元素。<font color ='red'>与排序二叉树不同，在堆中，可以有重复元素，元素间不是完全有序的</font>，但对于父子节点之间，有一定的顺序要求。<font color ='red'>根据顺序分为两种堆：一种是最大堆，另一种是最小堆</font>
+        * 最大堆：
+            * 指每个节点都不大于其父节点
+            * 对每个父节点，一定不小于其所有孩子节点，而根节点就是所有节点中最大的
+        * 最小堆：
+            * 指每个节点都不小于其父节点
+            * 对每个父节点，一定不大于其所有孩子节点，而根节点就是所有节点中最小的
+
+---
+
+Summary
+
+总结来说，<font color ='red'>逻辑概念上，堆是完全二叉树</font>，父子节点间有特定顺序，分为最大堆和最小堆，`最大堆根是最大的，最小堆根是最小的`，<font color ='red'>物理存储上：堆使用数组进行物理存储</font>
+
+---
+
+#### 11.1.2 堆的算法
+
+> 1. 如何在堆上`进行数据的基本操作(增：添加元素、删：删除元素)`，在操作过程中如何`保持堆的属性(完全二叉树、大堆/小堆、根结点最大/最小)不变`
+
+##### a) 添加元素
+
+【步骤】如下：`小堆为例`
+
+1. （在完全二叉树的基础上）添加至尾部，要满足完全二叉树的要求（紧凑）
+2. 与父节点对比，若元素值小于父节点，则交换位置
+3. 父节点作为当前节点，重复第二步
+
+以上称为`向上调整（与大堆/小堆无关）`；`调整的过程就是保持堆性质的过程`
+
+
+
+##### b) 删除元素
+
+###### 1）从头部删除元素
+
+【步骤】如下，`小堆为例`
+
+1. 根与尾(物理存储时数组中的最后一个元素)交换，交换后删除尾元素
+
+2. 对比、交换，对比根与左右子树元素的值，取其中最小的与根的元素进行交换，在交换后的子树继续重复2的操作
+
+以上称为`向下调整（与大堆/小堆无关）`；`调整的过程就是保持堆的性质`
+
+
+
+###### 2）从中间删除元素
+
+【步骤】如下，`小堆为例`
+
+1. 用最后一个元素替换待删除的元素，交换后删除尾元素
+2. 替换后，有两种情况：如果该元素大于某孩子节点，则需向下调整（sift-down）；如果小于父节点，则需向上调整（siftup）。
+
+
+
+##### c) 构建初始堆
+
+【思想】如下，`小堆为例`
+
+1. 选取入手元素。最后一个非叶子节点
+2. 一直往前直到根，对每个节点，执行向下调整（siftdown）
+    * `就是一直在动态的换头节点(相当于上面的删除头节点元素，即向下调整)，向下调整恢复堆性质`
+
+> 换句话说，是自底向上，先使每个最小子树为堆，然后每对左右子树和其父节点合并，调整为更大的堆，因为每个子树已经为堆，所以调整就是对父节点执行向下调整（siftdown），这样一直合并调整直到根。
+
+
+
+##### d) 堆排序
+
+...
+
+【堆排序的思想】`升序排列`
+
+1. 首先构建初始堆`小堆`，然后逻辑上移除头节点(实际并没有移除)，再次构建初始堆依次处重复这样依次删除的就是该数组从小到大序列
+
+【参考】：[堆排序](https://blog.csdn.net/u013384984/article/details/79496052)
+
+##### Summary
+
+1）在添加和删除元素时，有两个关键的过程以保持堆的性质，一个是向上调整（siftup），另一个是向下调整（siftdown），它们的效率都为O(log2(N))。由无序数组构建堆的过程heapify是一个自底向上循环的过程，效率为O(N)。
+
+2）查找和遍历就是对数组的查找和遍历，效率为O(N)
+
+---
+
+### 11.2 剖析PriorityQueue
+
+> * PriorityQueue是优先级队列，它首先实现了队列接口（Queue），与LinkedList类似，它的队列长度也没有限制,<font color ='red'>与一般队列的区别是，它有优先级的概念，每个元素都有优先级，队头的元素永远都是优先级最高的</font>
+> * riorityQueue内部是用堆实现的，<font color ='red'>内部元素不是完全有序的</font>，不过，`逐个出队会得到有序的输出`
+
+#### 11.2.1 基本用法
+
+###### a) Queue相关方法
+
+Queue相关方法
+
+<img src="assets/image-20211017222220975.png" alt="image-20211017222220975" style="zoom: 40%;" />
+
+PriorityQueue构造方法
+
+<img src="assets/image-20211017222303965.png" alt="image-20211017222303965" style="zoom:40%;" />
+
+* 与TreeMap/TreeSet类似，为了保持一定顺序， PriorityQueue要求要么元素实现Comparable接口，要么传递一个比较器Comparator。
+
+PriorityQueue实现Queue接口，可以实现队列的基本操作，代码如下
+
+```java
+public static void testBase() {
+        PriorityQueue<String> pq = new PriorityQueue<String>(11, Collections.reverseOrder());
+//        PriorityQueue<String> pq = new PriorityQueue<String>();
+        pq.offer("3");
+        pq.offer("5");
+        pq.offer("4");
+        List<String> list = new ArrayList<>();
+        list.add("1");
+        list.add("2");
+        list.add("3");
+        pq.addAll(list);
+        while (pq.peek() != null) {
+            System.out.println(pq.poll());
+        }
+    }
+```
+
+---
+
+b)PriorityQueue的优先级使用
+
+模拟一个任务队列，定义一个内部类Task表示任务，如下所示：
+
+```java
+public static void main(String[] args) {
+        TaskPriorityImpl();
+    }
+		//内部类Task表示任务
+    static class Task {
+        int priorityGrade;
+        String name;
+
+        public Task(int priorityGrade, String name) {
+            this.priorityGrade = priorityGrade;
+            this.name = name;
+        }
+
+        public int getPriorityGrade() {
+            return priorityGrade;
+        }
+
+        public void setPriorityGrade(int priorityGrade) {
+            this.priorityGrade = priorityGrade;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return "Task{" +
+                    "priorityGrade=" + priorityGrade +
+                    ", name='" + name + '\'' +
+                    '}';
+        }
+    }
+
+    //实现任务优先级队列,按照优先级出队
+    public static void TaskPriorityImpl(){
+        Comparator<Task> cmptor = (o1, o2) -> {
+            if (o1.priorityGrade > o2.priorityGrade) {
+                return -1;
+            } else if (o1.priorityGrade < o2.priorityGrade) {
+                return 1;
+            }
+            return 0;
+
+        };
+        Queue<Task> queue = new PriorityQueue<>(11,cmptor);
+        Task study = new Task(1, "study");
+        Task food = new Task(2, "food");
+        Task work = new Task(3, "work");
+        queue.offer(study);
+        queue.offer(food);
+        queue.offer(work);
+        while (queue.peek() != null) {
+            System.out.println(queue.poll());
+        }
+    }
+```
+
+---
+
+#### 11.2.2 实现原理
+
+a) 内部组成
+
+<img src="assets/image-20211017225604436.png" alt="image-20211017225604436" style="zoom:50%;" />
+
+queue就是实际存储元素的数组。size表示当前元素个数。comparator为比较器，可以为null
+
+* comparator自定类的时候需要注意，自定义类若没有实现Comparable接口则必须传入comparator参数，否则报错
+
+b）方法实现原理
+
+【添加元素】
+
+1. 确保数组`queue`的长度是否够用
+2. 添加元素，并向上调整至满足堆的性质
+
+---
+
+
+
+#### 11.2.3 Summary
+
+
 
 ## 15. 并发基础知识
 
